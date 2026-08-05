@@ -6,7 +6,7 @@
   "description": "An nsite-hosted opener shell for Nostr napplets",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "check": "node --check src/fragment.js && node --check src/opener.js && node --check src/main.js"
+    "check": "node --check src/fragment.js && node --check src/opener.js && node --check src/paja-resolver.js && node --check src/main.js"
   },
   "license": "MIT"
 }

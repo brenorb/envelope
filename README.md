@@ -11,6 +11,9 @@ https://your-nsite.example/#nw1.<base64url(JSON)>
 See [research/architecture.md](research/architecture.md) for the protocol
 research, security boundary, and implementation roadmap.
 
+See [docs/integration.md](docs/integration.md) for wiring the real Paja
+resolver and deploying the shell as an nsite.
+
 ## Development
 
 ```bash
@@ -28,6 +31,7 @@ while tests and the demo use a deterministic in-memory resolver.
 - bounded JSON state and NIP-19 pointer validation;
 - resolver-driven target loading;
 - opaque sandboxed iframe with post-load launch state;
+- adapter boundary for Paja's verified NIP-5D resolver;
 - explicit loading, empty, and error states;
 - tests for malformed links, tampering, iframe policy, and state delivery.
 
