@@ -6,8 +6,8 @@
   "description": "An nsite-hosted opener shell for Nostr napplets",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "check": "node --check public/sw.js && node --check src/fragment.js && node --check src/opener.js && node --check src/opener-napplet.js && node --check src/paja-pointer-resolver.js && node --check src/paja-resolver.js && node --check src/kehto-shell.js && node --check src/offline-cache.js && node --check src/main.js",
-    "build": "vite build",
+    "check": "node --check public/sw.js && node --check src/fragment.js && node --check src/opener.js && node --check src/opener-napplet.js && node --check src/paja-nowhere-host.js && node --check src/paja-pointer-resolver.js && node --check src/paja-resolver.js && node --check src/kehto-shell.js && node --check src/offline-cache.js && node --check src/main.js && node --check scripts/build-paja-runtime.mjs",
+    "build": "node scripts/build-paja-runtime.mjs",
     "dev": "vite",
     "browser:smoke": "node scripts/browser-smoke.mjs"
   },
