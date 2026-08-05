@@ -105,13 +105,19 @@ The nsite opener shell itself is static and can be served from a local cache.
 The first launch of a target normally needs relay and Blossom access unless the
 target artifact is already in a verified local cache. Paja's documented cache
 strategy uses Cache Storage for verified blobs and aggregate records; cached
-bytes remain untrusted until their hashes are checked again.
+bytes remain untrusted until their hashes are checked again. Hosted Nowhere
+adds a small pointer-to-target cache around that resolver so the shell can
+reuse the exact verified HTML and identity without resolving the pointer again.
+It checks the stored HTML checksum and discards malformed or corrupted
+records. This makes the shell offline-capable after a successful launch or an
+explicit prefetch; it cannot make a target's own network-backed features
+offline.
 
 That gives us a useful progression:
 
 - **MVP:** static shell, hash envelope, bundled Paja/NIP-5D resolver, signed
   manifest/blob verification, Kehto NAP-SHELL bridge, built-in opener napplet,
-  sandboxed target, and state delivery.
+  sandboxed target, state delivery, and offline reuse of verified targets.
 - **Next:** real relay/outbox/identity/intent service backends, an installed
   napplet catalog, multiple runtime windows, and stronger offline prefetch UX.
 - **Later:** NAP-INTENT/NAP-INC integration, installed target catalog, multiple

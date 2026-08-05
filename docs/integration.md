@@ -34,6 +34,26 @@ The resolver must return Paja's verified result, including `indexHtml`,
 the opener. It must not be replaced with a fetch of arbitrary HTML from a URL
 in the fragment.
 
+## Offline target reuse
+
+The shell wraps the live resolver with a same-origin Cache Storage adapter. A
+successful verified launch stores the target HTML, identity, and an HTML
+checksum under the pointer. Later launches can use that record without relay
+or Blossom access. The cache is not a substitute for verification: a miss
+still goes through Paja, and corrupted records are discarded.
+
+To prefetch a pointer while online, call the small host API exposed by the
+shell:
+
+```js
+await globalThis.hostedNowhereOffline.prefetch(pointer);
+```
+
+For a cache-only diagnostic or an offline-first application wrapper, use
+`resolveOffline(pointer)`. Prefetching the target artifact does not make the
+target's own network-dependent features offline; the target must cache its own
+data and resources as well.
+
 ## Building the nsite
 
 Build the static output with `npm run build`, then deploy `dist/` with `nsyte`.
@@ -51,7 +71,8 @@ Before production deployment:
 - bundle and pin the exact Paja/Kehto and `@napplet/*` versions used;
 - configure the relay and Blossom allowlists in the host;
 - use verified NIP-5D manifests and content-addressed blobs;
-- add a Cache Storage artifact cache if repeat offline launches matter;
+- prefetch at least one target while online if it must launch with no relay or
+  Blossom connectivity;
 - use the `#nwe1.` encrypted fragment format if state is sensitive; the shell
   prompts for the password and never puts it in the URL;
 - test on the actual nsite gateway and with a cold browser cache.

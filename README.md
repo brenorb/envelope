@@ -43,6 +43,7 @@ while tests and the demo use a deterministic in-memory resolver.
 - opaque sandboxed iframe with post-load launch state;
 - bundled Paja/NIP-5D resolver and Kehto NAP-SHELL bridge;
 - built-in opener napplet that hands the fragment launch request to the target;
+- Cache Storage reuse for verified targets after the first online launch;
 - explicit loading, empty, and error states;
 - tests for malformed links, tampering, iframe policy, encryption, and state
   delivery.

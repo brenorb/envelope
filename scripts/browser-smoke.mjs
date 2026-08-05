@@ -11,25 +11,29 @@ const browser = await chromium.launch({
 try {
   const page = await browser.newPage();
   await page.addInitScript(() => {
+    globalThis.__hostedNowhereFailLive = false;
     globalThis.hostedNowherePaja = {
-      resolvePointer: async () => ({
-        indexHtml: `<!doctype html>
-          <html><head></head><body>
-            <h1 id="target">Resolved target</h1>
-            <script>
-              addEventListener('message', (event) => {
-                if (event.data?.type === 'opener.init') {
-                  document.body.dataset.state = JSON.stringify(event.data.state);
-                }
-              });
-            <\/script>
-          </body></html>`,
-        dTag: 'demo',
-        aggregateHash: 'a'.repeat(64),
-        manifest: { title: 'Demo' },
-        relays: [],
-        blossomServers: [],
-      }),
+      resolvePointer: async () => {
+        if (globalThis.__hostedNowhereFailLive) throw new Error('live resolver intentionally disabled');
+        return {
+          indexHtml: `<!doctype html>
+            <html><head></head><body>
+              <h1 id="target">Resolved target</h1>
+              <script>
+                addEventListener('message', (event) => {
+                  if (event.data?.type === 'opener.init') {
+                    document.body.dataset.state = JSON.stringify(event.data.state);
+                  }
+                });
+              <\/script>
+            </body></html>`,
+          dTag: 'demo',
+          aggregateHash: 'a'.repeat(64),
+          manifest: { title: 'Demo' },
+          relays: [],
+          blossomServers: [],
+        };
+      },
     };
   });
 
@@ -46,8 +50,21 @@ try {
   assert.equal(await frame.locator('#target').textContent(), 'Resolved target');
   assert.equal(await frame.evaluate(() => document.body.dataset.state), '{"view":"timeline"}');
   assert.ok(await frame.locator('meta[http-equiv="Content-Security-Policy"]').count());
+  assert.equal(await page.evaluate(() => typeof globalThis.hostedNowhereOffline?.prefetch), 'function');
 
-  console.log('browser smoke: opener -> verified target -> state delivery passed');
+  const replayHash = encodeFragment({ pointer, state: { view: 'offline-replay' } });
+  await page.evaluate((hash) => {
+    globalThis.__hostedNowhereFailLive = true;
+    window.location.hash = hash.slice(1);
+  }, replayHash);
+  await page.waitForFunction(() => document.querySelector('#status')?.textContent === 'Target is ready.');
+  await page.frameLocator('iframe').locator('#target').waitFor();
+  assert.equal(
+    await page.frameLocator('iframe').locator('body').getAttribute('data-state'),
+    '{"view":"offline-replay"}',
+  );
+
+  console.log('browser smoke: opener -> verified target -> state delivery -> offline cache replay passed');
 } finally {
   await browser.close();
 }
