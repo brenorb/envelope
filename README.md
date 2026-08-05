@@ -24,6 +24,10 @@ research, security boundary, and implementation roadmap.
 See [docs/integration.md](docs/integration.md) for wiring the real Paja
 resolver and deploying the shell as an nsite.
 
+The single source of truth for the six-point implementation contract is
+[outputs/napplet-nowhere-status/implementation-status.xlsx](outputs/napplet-nowhere-status/implementation-status.xlsx).
+It records the proof required before any item can be marked complete.
+
 ## Development
 
 ```bash
@@ -42,7 +46,8 @@ while tests and the demo use a deterministic in-memory resolver.
 - resolver-driven target loading;
 - opaque sandboxed iframe with post-load launch state;
 - bundled Paja/NIP-5D resolver and Kehto NAP-SHELL bridge;
-- built-in opener napplet that hands the fragment launch request to the target;
+- built-in opener bootstrap that hands the host-decoded launch request to the
+  target (tracked as an interim implementation, not the final opener napplet);
 - Cache Storage reuse for verified targets after the first online launch;
 - service-worker caching for reloading the static shell without its gateway;
 - explicit loading, empty, and error states;
