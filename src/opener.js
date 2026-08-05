@@ -12,21 +12,48 @@ import { decodeFragment } from './fragment.js';
  *   document: DocumentLike,
  *   container: ElementLike,
  *   status: ElementLike,
- *   resolver: { resolve: (pointer: string) => Promise<ResolvedTarget> },
+   *   resolver: { resolve: (pointer: string) => Promise<ResolvedTarget> },
+ *   bootstrapHtml?: string,
  *   onError?: (error: unknown) => void,
  * }} options
  */
-export function createOpener({ window, document, container, status, resolver, onError } = {}) {
+export function createOpener({ window, document, container, status, resolver, bootstrapHtml, onError } = {}) {
   assertOptions({ window, document, container, status, resolver });
+  if (bootstrapHtml !== undefined && typeof bootstrapHtml !== 'string') {
+    throw new Error('bootstrapHtml must be a string');
+  }
 
   let generation = 0;
   let started = false;
+  let activeFrame;
+  let activeRole;
+  let activeRequest;
+  let shellInitialized = false;
 
   const onHashChange = () => { void load(); };
+  const onMessage = (event) => {
+    if (!activeFrame || event?.source !== activeFrame.contentWindow) return;
+    const data = event.data;
+    if (!data || typeof data.type !== 'string') return;
+    if (data.type === 'shell.ready') {
+      if (shellInitialized) return;
+      shellInitialized = true;
+      activeFrame.contentWindow?.postMessage({
+        type: 'shell.init',
+        capabilities: { domains: ['shell', 'opener'] },
+        services: [],
+      }, '*');
+      return;
+    }
+    if (activeRole === 'bootstrap' && data.type === 'opener.open' && activeRequest) {
+      void resolveAndMount(activeRequest, generation);
+    }
+  };
 
   async function start() {
     if (!started) {
       window.addEventListener('hashchange', onHashChange);
+      window.addEventListener('message', onMessage);
       started = true;
     }
     return load();
@@ -49,19 +76,29 @@ export function createOpener({ window, document, container, status, resolver, on
       return;
     }
 
+    if (bootstrapHtml !== undefined) {
+      mountTarget({ verified: true, indexHtml: bootstrapHtml, title: 'Hosted Nowhere opener' }, request, currentGeneration, 'bootstrap');
+      return;
+    }
+    return resolveAndMount(request, currentGeneration);
+  }
+
+  async function resolveAndMount(request, currentGeneration) {
+    if (currentGeneration !== generation) return;
     setStatus(status, 'Resolving napplet…', 'loading');
     try {
       const target = await resolver.resolve(request.pointer);
       if (currentGeneration !== generation) return;
       assertVerifiedTarget(target);
-      mountTarget(target, request, currentGeneration);
+      mountTarget(target, request, currentGeneration, 'target');
     } catch (error) {
       if (currentGeneration !== generation) return;
+      clearTarget();
       showError('This napplet could not open.', error);
     }
   }
 
-  function mountTarget(target, request, currentGeneration) {
+  function mountTarget(target, request, currentGeneration, role) {
     const frame = document.createElement('iframe');
     frame.setAttribute('sandbox', 'allow-scripts');
     frame.sandbox?.add('allow-scripts');
@@ -78,6 +115,10 @@ export function createOpener({ window, document, container, status, resolver, on
       setStatus(status, 'Target is ready.', 'ready');
     });
     frame.srcdoc = target.indexHtml;
+    activeFrame = frame;
+    activeRole = role;
+    activeRequest = request;
+    shellInitialized = false;
     replaceChildren(container, frame);
     setStatus(status, 'Target is ready.', 'ready');
   }
@@ -95,6 +136,9 @@ export function createOpener({ window, document, container, status, resolver, on
     generation += 1;
     if (!started) return;
     window.removeEventListener('hashchange', onHashChange);
+    window.removeEventListener('message', onMessage);
+    activeFrame = undefined;
+    activeRequest = undefined;
     started = false;
   }
 

@@ -55,6 +55,7 @@ function makeWindow(hash) {
     addEventListener: (type, listener) => listeners.set(type, listener),
     removeEventListener: (type) => listeners.delete(type),
     dispatch: (type) => listeners.get(type)?.(),
+    dispatchMessage: (data, source) => listeners.get('message')?.({ data, source }),
   };
 }
 
@@ -152,4 +153,31 @@ test('empty links render the opener landing state without resolving', async () =
   assert.equal(calls, 0);
   assert.equal(container.children.length, 0);
   assert.match(status.textContent, /choose a napplet/i);
+});
+
+test('answers the NAP-SHELL handshake exactly once for the active frame', async () => {
+  const container = new FakeElement('main');
+  const status = new FakeElement('p');
+  const window = makeWindow(encodeFragment({ pointer }));
+  const opener = createOpener({
+    window,
+    document: new FakeDocument(),
+    container,
+    status,
+    resolver: { resolve: async () => ({ verified: true, indexHtml: '<h1>Target</h1>' }) },
+  });
+
+  await opener.start();
+  const iframe = container.children[0];
+  window.dispatchMessage({ type: 'shell.ready' }, iframe.contentWindow);
+  window.dispatchMessage({ type: 'shell.ready' }, iframe.contentWindow);
+
+  assert.deepEqual(iframe.contentWindow.messages, [{
+    message: {
+      type: 'shell.init',
+      capabilities: { domains: ['shell', 'opener'] },
+      services: [],
+    },
+    targetOrigin: '*',
+  }]);
 });

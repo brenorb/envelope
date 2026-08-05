@@ -41,3 +41,65 @@ export function createPajaResolver(resolvePajaPointer) {
     },
   };
 }
+
+/**
+ * Create the browser resolver used by the deployable shell. If no resolver is
+ * supplied, it uses the local browser-compatible Paja/NIP-5D implementation.
+ *
+ * @param {{resolve?: Function, relays?: string[], blossomServers?: string[], maxWaitMs?: number}} [options]
+ */
+export function createBrowserPajaResolver(options = {}) {
+  const resolve = options.resolve ?? ((pointer) => resolvePajaPointerImpl(pointer, options));
+  return createPajaResolver(async (pointer) => {
+    const resolved = await resolve(pointer);
+    const origins = [...(resolved.relays ?? []), ...(resolved.blossomServers ?? [])]
+      .map(toOrigin)
+      .filter(Boolean);
+    return {
+      ...resolved,
+      indexHtml: injectPajaRuntimeCsp(resolved.indexHtml, origins),
+    };
+  });
+}
+
+/**
+ * Inject the conservative CSP used for verified runtime-pointer `srcdoc`.
+ * The target remains sandboxed separately by the opener host.
+ */
+export function injectPajaRuntimeCsp(html, origins = []) {
+  const allowed = [...new Set(origins)].sort();
+  const connectSrc = allowed.length > 0 ? `connect-src ${allowed.join(' ')}` : "connect-src 'none'";
+  const value = [
+    "default-src 'none'",
+    "script-src 'unsafe-inline'",
+    "style-src 'unsafe-inline'",
+    'img-src data: blob:',
+    'font-src data:',
+    connectSrc,
+    "worker-src 'none'",
+    "child-src 'none'",
+    "frame-src 'none'",
+    "media-src 'none'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "frame-ancestors 'self'",
+  ].join('; ');
+  const meta = `<meta http-equiv="Content-Security-Policy" content="${escapeAttribute(value)}">`;
+  if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (open) => `${open}${meta}`);
+  if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (open) => `${open}<head>${meta}</head>`);
+  return `${meta}${html}`;
+}
+
+function toOrigin(value) {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return undefined;
+  }
+}
+
+function escapeAttribute(value) {
+  return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;');
+}
+import { resolvePajaPointer as resolvePajaPointerImpl } from './paja-pointer-resolver.js';

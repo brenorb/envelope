@@ -1,5 +1,6 @@
 import { createOpener } from './opener.js';
-import { createPajaResolver } from './paja-resolver.js';
+import { createBrowserPajaResolver } from './paja-resolver.js';
+import { DEFAULT_OPENER_HTML } from './opener-napplet.js';
 
 const stage = document.querySelector('#stage');
 const status = document.querySelector('#status');
@@ -8,13 +9,11 @@ const status = document.querySelector('#status');
 // changing the fragment codec or opener lifecycle. Keeping this explicit also
 // prevents the shell from silently trusting an arbitrary URL as napplet HTML.
 const paja = globalThis.hostedNowherePaja;
-const resolver = paja?.resolvePointer
-  ? createPajaResolver(paja.resolvePointer)
-  : {
-      resolve: async () => {
-        throw new Error('No Paja resolver has been installed in this build.');
-      },
-    };
+const runtimeConfig = globalThis.hostedNowhereConfig ?? {};
+const resolver = createBrowserPajaResolver({
+  ...runtimeConfig,
+  ...(paja?.resolvePointer ? { resolve: paja.resolvePointer } : {}),
+});
 
 const opener = createOpener({
   window,
@@ -22,6 +21,7 @@ const opener = createOpener({
   container: stage,
   status,
   resolver,
+  bootstrapHtml: DEFAULT_OPENER_HTML,
   onError: (error) => console.error('[hosted-nowhere]', error),
 });
 
