@@ -26,6 +26,16 @@ that can be backed by Paja's verified resolution pipeline.
 
 ## What the link contains
 
+The original Hosted Nowhere implementation is a useful reference, but its
+fragment is not a drop-in format for this project. Its codec serializes a tool,
+applies dictionary substitutions, uses raw DEFLATE, and base64url-encodes the
+result. Password encryption is an optional outer layer; the renderer treats an
+encrypted fragment like any other fragment it cannot decode until the user
+supplies the password. This project uses a separate `nw1` launch envelope so a
+pointer can select an independently published napplet. A future version can
+reuse the original compression and encryption pipeline around this envelope,
+but must use a new version marker and explicit key/passphrase UX.
+
 The fragment is intentionally a versioned, URL-safe envelope:
 
 ```text
@@ -122,6 +132,8 @@ That gives us a useful progression:
 - [Paja runtime resolver](https://github.com/kehto/web/blob/main/packages/paja/src/runtime-resolver.ts)
 - [NIP-5D source reference](https://github.com/nostr-protocol/nips/pull/2303)
 - [NAP registry](https://github.com/napplet/naps)
+- [Original Hosted Nowhere implementation](https://github.com/5t34k/nowhere)
+- [Hosted Nowhere technical architecture](https://hostednowhere.com/how-it-works)
 
 The NIP-5D and NAP documents are drafts. This project should pin any future
 adapter to a reviewed commit and keep protocol-specific code behind the
