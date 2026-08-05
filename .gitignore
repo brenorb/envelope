@@ -1,0 +1,4 @@
+.git-meta/
+node_modules/
+dist/
+.DS_Store

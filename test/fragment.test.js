@@ -42,7 +42,7 @@ test('rejects unsupported versions and malformed payloads', () => {
 
 test('rejects non-NIP-19 pointers and oversized fragments', () => {
   assert.throws(() => encodeFragment({ pointer: 'https://example.com/app' }), /naddr or nevent/i);
-  assert.throws(() => encodeFragment({ pointer: 'naddr1abc', state: 'x'.repeat(10_000) }), /large/i);
+  assert.throws(() => encodeFragment({ pointer: 'naddr1ac', state: 'x'.repeat(10_000) }), /large/i);
   assert.ok(MAX_FRAGMENT_LENGTH < 10_000);
 });
 
