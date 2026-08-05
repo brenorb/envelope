@@ -1,4 +1,4 @@
-import { decodeEncryptedFragment, decodeFragment, isEncryptedFragment } from './fragment.js';
+import { MAX_FRAGMENT_LENGTH, validateLaunchRequest } from './fragment.js';
 
 /**
  * Create the static opener controller.
@@ -15,24 +15,18 @@ import { decodeEncryptedFragment, decodeFragment, isEncryptedFragment } from './
  *   resolver: { resolve: (pointer: string) => Promise<ResolvedTarget> },
  *   bootstrapHtml?: string,
  *   shellHost?: { prepareHtml: Function, registerFrame: Function, destroy?: Function },
- *   passwordProvider?: () => Promise<string>,
  *   onError?: (error: unknown) => void,
  * }} options
  */
-export function createOpener({ window, document, container, status, resolver, bootstrapHtml, shellHost, passwordProvider, onError } = {}) {
+export function createOpener({ window, document, container, status, resolver, bootstrapHtml, shellHost, onError } = {}) {
   assertOptions({ window, document, container, status, resolver });
-  if (bootstrapHtml !== undefined && typeof bootstrapHtml !== 'string') {
-    throw new Error('bootstrapHtml must be a string');
-  }
-  if (passwordProvider !== undefined && typeof passwordProvider !== 'function') {
-    throw new Error('passwordProvider must be a function');
-  }
+  if (typeof bootstrapHtml !== 'string') throw new Error('bootstrapHtml must be a string');
 
   let generation = 0;
   let started = false;
   let activeFrame;
   let activeRole;
-  let activeRequest;
+  let activeFragment = '';
   let activeFrameCleanup;
   let shellInitialized = false;
 
@@ -52,8 +46,19 @@ export function createOpener({ window, document, container, status, resolver, bo
       }, '*');
       return;
     }
-    if (activeRole === 'bootstrap' && data.type === 'opener.open' && activeRequest) {
-      void resolveAndMount(activeRequest, generation);
+    if (activeRole === 'bootstrap' && data.type === 'opener.open') {
+      let request;
+      try {
+        request = validateLaunchRequest(data);
+      } catch (error) {
+        showError('The opener returned an invalid launch request.', error);
+        return;
+      }
+      void resolveAndMount(request, generation);
+      return;
+    }
+    if (activeRole === 'bootstrap' && data.type === 'opener.error') {
+      showError('This link is not a valid Hosted Nowhere launch link.', data.error);
     }
   };
 
@@ -69,35 +74,21 @@ export function createOpener({ window, document, container, status, resolver, bo
   async function load(hash = window.location.hash) {
     const currentGeneration = ++generation;
     clearTarget();
-
-    let request;
-    try {
-      if (isEncryptedFragment(hash)) {
-        if (!passwordProvider) throw new Error('password required for encrypted fragment');
-        request = await decodeEncryptedFragment(hash, await passwordProvider());
-      } else {
-        request = decodeFragment(hash);
-      }
-    } catch (error) {
-      showError(
-        isEncryptedFragment(hash)
-          ? 'This encrypted link could not open. Check the password and try again.'
-          : 'This link is not a valid Hosted Nowhere launch link.',
-        error,
-      );
+    if (typeof hash !== 'string') {
+      showError('The URL fragment is not a string.', new Error('fragment must be a string'));
       return;
     }
-
-    if (request === null) {
-      setStatus(status, 'Choose a napplet to open.', 'empty');
+    if (hash.length > MAX_FRAGMENT_LENGTH + 1) {
+      showError('This link is too large to open safely.', new Error('fragment exceeds transport limit'));
       return;
     }
-
-    if (bootstrapHtml !== undefined) {
-      mountTarget({ verified: true, indexHtml: bootstrapHtml, title: 'Hosted Nowhere opener' }, request, currentGeneration, 'bootstrap');
-      return;
-    }
-    return resolveAndMount(request, currentGeneration);
+    activeFragment = hash;
+    mountTarget(
+      { verified: true, indexHtml: bootstrapHtml, title: 'Hosted Nowhere opener' },
+      { version: 1, pointer: 'opener' },
+      currentGeneration,
+      'bootstrap',
+    );
   }
 
   async function resolveAndMount(request, currentGeneration) {
@@ -123,10 +114,14 @@ export function createOpener({ window, document, container, status, resolver, bo
     frame.addEventListener('load', () => {
       if (currentGeneration !== generation) return;
       const message = {
-        type: 'opener.init',
+        type: role === 'bootstrap' ? 'opener.fragment' : 'opener.init',
         version: 1,
-        pointer: request.pointer,
-        ...(request.state === undefined ? {} : { state: request.state }),
+        ...(role === 'bootstrap'
+          ? { fragment: activeFragment }
+          : {
+              pointer: request.pointer,
+              ...(request.state === undefined ? {} : { state: request.state }),
+            }),
       };
       frame.contentWindow?.postMessage(message, '*');
       setStatus(status, 'Target is ready.', 'ready');
@@ -135,7 +130,6 @@ export function createOpener({ window, document, container, status, resolver, bo
     activeFrameCleanup = undefined;
     activeFrame = frame;
     activeRole = role;
-    activeRequest = request;
     shellInitialized = false;
     replaceChildren(container, frame);
     activeFrameCleanup = shellHost?.registerFrame(frame, target.identity ?? {
@@ -147,6 +141,11 @@ export function createOpener({ window, document, container, status, resolver, bo
   }
 
   function clearTarget() {
+    activeFrameCleanup?.();
+    activeFrameCleanup = undefined;
+    activeFrame = undefined;
+    activeRole = undefined;
+    shellInitialized = false;
     replaceChildren(container);
   }
 
@@ -161,7 +160,8 @@ export function createOpener({ window, document, container, status, resolver, bo
     window.removeEventListener('hashchange', onHashChange);
     window.removeEventListener('message', onMessage);
     activeFrame = undefined;
-    activeRequest = undefined;
+    activeRole = undefined;
+    activeFragment = '';
     activeFrameCleanup?.();
     activeFrameCleanup = undefined;
     shellHost?.destroy?.();

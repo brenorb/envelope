@@ -4,6 +4,7 @@ import { createOpener } from '../src/opener.js';
 import { encodeEncryptedFragment, encodeFragment } from '../src/fragment.js';
 
 const pointer = 'naddr1qqxnzd3h9kummnw3e4kzmr0d3sk6t';
+const bootstrapHtml = '<!doctype html><h1>Opener napplet</h1>';
 
 class FakeElement {
   constructor(tagName) {
@@ -59,30 +60,58 @@ function makeWindow(hash) {
   };
 }
 
-const flush = () => new Promise((resolve) => setImmediate(resolve));
-
-test('loads resolved HTML in an opaque sandbox and delivers state after load', async () => {
+function makeHarness(hash, resolver = { resolve: async () => ({ verified: true, indexHtml: '<h1>Target</h1>' }) }) {
   const container = new FakeElement('main');
   const status = new FakeElement('p');
-  const window = makeWindow(encodeFragment({ pointer, state: { view: 'timeline' } }));
+  const window = makeWindow(hash);
   const opener = createOpener({
     window,
     document: new FakeDocument(),
     container,
     status,
-    resolver: { resolve: async () => ({ verified: true, indexHtml: '<!doctype html><h1>Target</h1>', identity: 'dtag@hash' }) },
+    resolver,
+    bootstrapHtml,
+  });
+  return { container, status, window, opener };
+}
+
+const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+test('the host forwards the untouched fragment and resolves only the opener-parsed request', async () => {
+  const fragment = encodeFragment({ pointer, state: { view: 'timeline' } });
+  const resolved = [];
+  const harness = makeHarness(fragment, {
+    resolve: async (value) => {
+      resolved.push(value);
+      return { verified: true, indexHtml: '<h1>Target</h1>', identity: 'dtag@hash' };
+    },
   });
 
-  await opener.start();
-  assert.equal(container.children.length, 1);
-  const iframe = container.children[0];
-  assert.deepEqual(iframe.sandbox.values, ['allow-scripts']);
-  assert.equal(iframe.attributes.get('sandbox'), 'allow-scripts');
-  assert.equal(iframe.srcdoc, '<!doctype html><h1>Target</h1>');
-  assert.equal(status.textContent, 'Target is ready.');
+  await harness.opener.start();
+  const openerFrame = harness.container.children[0];
+  assert.equal(openerFrame.srcdoc, bootstrapHtml);
+  assert.deepEqual(resolved, [], 'the host must not decode or resolve the fragment');
 
-  iframe.dispatch('load');
-  assert.deepEqual(iframe.contentWindow.messages, [{
+  openerFrame.dispatch('load');
+  assert.deepEqual(openerFrame.contentWindow.messages, [{
+    message: { type: 'opener.fragment', version: 1, fragment },
+    targetOrigin: '*',
+  }]);
+
+  harness.window.dispatchMessage({
+    type: 'opener.open',
+    version: 1,
+    pointer,
+    state: { view: 'timeline' },
+  }, openerFrame.contentWindow);
+  await flush();
+
+  assert.deepEqual(resolved, [pointer]);
+  const targetFrame = harness.container.children[0];
+  assert.equal(targetFrame.srcdoc, '<h1>Target</h1>');
+  assert.deepEqual(targetFrame.sandbox.values, ['allow-scripts']);
+  targetFrame.dispatch('load');
+  assert.deepEqual(targetFrame.contentWindow.messages, [{
     message: {
       type: 'opener.init',
       version: 1,
@@ -93,86 +122,56 @@ test('loads resolved HTML in an opaque sandbox and delivers state after load', a
   }]);
 });
 
-test('shows an explicit error and never mounts unverified resolver output', async () => {
-  const container = new FakeElement('main');
-  const status = new FakeElement('p');
-  const window = makeWindow(encodeFragment({ pointer }));
-  const opener = createOpener({
-    window,
-    document: new FakeDocument(),
-    container,
-    status,
-    resolver: { resolve: async () => ({ indexHtml: '<script>bad()</script>' }) },
-  });
+test('the host transports malformed fragments without parsing them', async () => {
+  const fragment = '#not-a-hosted-nowhere-payload';
+  const harness = makeHarness(fragment);
 
-  await opener.start();
-  assert.equal(container.children.length, 0);
-  assert.match(status.textContent, /could not open/i);
-  assert.equal(status.attributes.get('data-state'), 'error');
+  await harness.opener.start();
+  const openerFrame = harness.container.children[0];
+  openerFrame.dispatch('load');
+
+  assert.equal(openerFrame.srcdoc, bootstrapHtml);
+  assert.equal(harness.status.attributes.get('data-state'), 'ready');
+  assert.equal(openerFrame.contentWindow.messages[0].message.fragment, fragment);
 });
 
-test('ignores a stale resolver result after the hash changes', async () => {
-  const container = new FakeElement('main');
-  const status = new FakeElement('p');
-  const nextPointer = 'nevent1qqs0d3h9kummnw3e4kzmr0d3sk6t';
-  const first = encodeFragment({ pointer, state: { page: 'old' } });
-  const second = encodeFragment({ pointer: nextPointer, state: { page: 'new' } });
-  const window = makeWindow(first);
-  let resolveFirst;
-  const resolver = {
-    resolve: (value) => value === pointer
-      ? new Promise((resolve) => { resolveFirst = resolve; })
-      : Promise.resolve({ verified: true, indexHtml: '<h1>New</h1>', identity: 'new' }),
-  };
-  const opener = createOpener({ window, document: new FakeDocument(), container, status, resolver });
+test('the host transports encrypted fragments without requesting or receiving the password', async () => {
+  const fragment = await encodeEncryptedFragment(
+    { pointer, state: { view: 'private' } },
+    'correct horse battery staple',
+  );
+  const harness = makeHarness(fragment);
 
-  const firstLoad = opener.start();
-  window.location.hash = second;
-  await opener.load();
-  resolveFirst({ verified: true, indexHtml: '<h1>Old</h1>', identity: 'old' });
-  await firstLoad;
-  await flush();
+  await harness.opener.start();
+  const openerFrame = harness.container.children[0];
+  openerFrame.dispatch('load');
 
-  assert.equal(container.children[0].srcdoc, '<h1>New</h1>');
+  assert.equal(openerFrame.contentWindow.messages[0].message.fragment, fragment);
+  assert.doesNotMatch(harness.opener.start.toString(), /password/i);
 });
 
-test('empty links render the opener landing state without resolving', async () => {
-  const container = new FakeElement('main');
-  const status = new FakeElement('p');
-  let calls = 0;
-  const window = makeWindow('#');
-  const opener = createOpener({
-    window,
-    document: new FakeDocument(),
-    container,
-    status,
-    resolver: { resolve: async () => { calls += 1; } },
-  });
+test('the default opener napplet opens even when the fragment is empty', async () => {
+  const harness = makeHarness('#');
 
-  await opener.start();
-  assert.equal(calls, 0);
-  assert.equal(container.children.length, 0);
-  assert.match(status.textContent, /choose a napplet/i);
+  await harness.opener.start();
+  const openerFrame = harness.container.children[0];
+  openerFrame.dispatch('load');
+
+  assert.equal(openerFrame.srcdoc, bootstrapHtml);
+  assert.equal(openerFrame.contentWindow.messages[0].message.fragment, '#');
 });
 
-test('answers the NAP-SHELL handshake exactly once for the active frame', async () => {
-  const container = new FakeElement('main');
-  const status = new FakeElement('p');
-  const window = makeWindow(encodeFragment({ pointer }));
-  const opener = createOpener({
-    window,
-    document: new FakeDocument(),
-    container,
-    status,
-    resolver: { resolve: async () => ({ verified: true, indexHtml: '<h1>Target</h1>' }) },
-  });
+test('the host answers the shell handshake once and ignores untrusted opener messages', async () => {
+  const harness = makeHarness(encodeFragment({ pointer }));
+  await harness.opener.start();
+  const openerFrame = harness.container.children[0];
 
-  await opener.start();
-  const iframe = container.children[0];
-  window.dispatchMessage({ type: 'shell.ready' }, iframe.contentWindow);
-  window.dispatchMessage({ type: 'shell.ready' }, iframe.contentWindow);
+  harness.window.dispatchMessage({ type: 'shell.ready' }, {});
+  harness.window.dispatchMessage({ type: 'opener.open', pointer }, {});
+  harness.window.dispatchMessage({ type: 'shell.ready' }, openerFrame.contentWindow);
+  harness.window.dispatchMessage({ type: 'shell.ready' }, openerFrame.contentWindow);
 
-  assert.deepEqual(iframe.contentWindow.messages, [{
+  assert.deepEqual(openerFrame.contentWindow.messages, [{
     message: {
       type: 'shell.init',
       capabilities: { domains: ['shell', 'opener'] },
@@ -180,27 +179,49 @@ test('answers the NAP-SHELL handshake exactly once for the active frame', async 
     },
     targetOrigin: '*',
   }]);
+  assert.equal(harness.container.children[0], openerFrame);
 });
 
-test('requests a password before opening an encrypted launch link', async () => {
-  const container = new FakeElement('main');
-  const status = new FakeElement('p');
-  const encrypted = await encodeEncryptedFragment({ pointer, state: { view: 'private' } }, 'correct horse battery staple');
-  const window = makeWindow(encrypted);
-  let receivedPointer;
-  const opener = createOpener({
-    window,
-    document: new FakeDocument(),
-    container,
-    status,
-    passwordProvider: async () => 'correct horse battery staple',
-    resolver: { resolve: async (value) => {
-      receivedPointer = value;
-      return { verified: true, indexHtml: '<h1>Private target</h1>' };
-    } },
-  });
+test('a stale opener request cannot replace the target selected by the current fragment', async () => {
+  const nextPointer = 'nevent1qqs0d3h9kummnw3e4kzmr0d3sk6t';
+  let resolveFirst;
+  const resolver = {
+    resolve: (value) => value === pointer
+      ? new Promise((resolve) => { resolveFirst = resolve; })
+      : Promise.resolve({ verified: true, indexHtml: '<h1>New</h1>', identity: 'new' }),
+  };
+  const harness = makeHarness(encodeFragment({ pointer }), resolver);
 
-  await opener.start();
-  assert.equal(receivedPointer, pointer);
-  assert.equal(container.children[0].srcdoc, '<h1>Private target</h1>');
+  await harness.opener.start();
+  const firstOpenerFrame = harness.container.children[0];
+  harness.window.dispatchMessage({ type: 'opener.open', pointer }, firstOpenerFrame.contentWindow);
+
+  harness.window.location.hash = encodeFragment({ pointer: nextPointer });
+  await harness.opener.load();
+  const nextOpenerFrame = harness.container.children[0];
+  harness.window.dispatchMessage({ type: 'opener.open', pointer: nextPointer }, nextOpenerFrame.contentWindow);
+  await flush();
+
+  resolveFirst({ verified: true, indexHtml: '<h1>Old</h1>', identity: 'old' });
+  await flush();
+  assert.equal(harness.container.children[0].srcdoc, '<h1>New</h1>');
+});
+
+test('the host rejects malformed opener output before invoking the resolver', async () => {
+  let calls = 0;
+  const harness = makeHarness(encodeFragment({ pointer }), {
+    resolve: async () => { calls += 1; },
+  });
+  await harness.opener.start();
+  const openerFrame = harness.container.children[0];
+
+  harness.window.dispatchMessage({
+    type: 'opener.open',
+    version: 1,
+    pointer: 'https://attacker.example/app',
+  }, openerFrame.contentWindow);
+  await flush();
+
+  assert.equal(calls, 0);
+  assert.equal(harness.status.attributes.get('data-state'), 'error');
 });
