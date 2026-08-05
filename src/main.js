@@ -5,6 +5,21 @@ import { createKehtoShellHost } from './kehto-shell.js';
 
 const stage = document.querySelector('#stage');
 const status = document.querySelector('#status');
+const unlockForm = document.querySelector('#unlock');
+const passwordInput = document.querySelector('#password');
+
+function requestPassword() {
+  unlockForm.hidden = false;
+  passwordInput.value = '';
+  passwordInput.focus();
+  return new Promise((resolve) => {
+    unlockForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      unlockForm.hidden = true;
+      resolve(passwordInput.value);
+    }, { once: true });
+  });
+}
 
 // A deployed nsite can provide the real Paja bundle as an adapter without
 // changing the fragment codec or opener lifecycle. Keeping this explicit also
@@ -25,6 +40,7 @@ const opener = createOpener({
   resolver,
   bootstrapHtml: DEFAULT_OPENER_HTML,
   shellHost,
+  passwordProvider: requestPassword,
   onError: (error) => console.error('[hosted-nowhere]', error),
 });
 

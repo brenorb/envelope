@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createOpener } from '../src/opener.js';
-import { encodeFragment } from '../src/fragment.js';
+import { encodeEncryptedFragment, encodeFragment } from '../src/fragment.js';
 
 const pointer = 'naddr1qqxnzd3h9kummnw3e4kzmr0d3sk6t';
 
@@ -180,4 +180,27 @@ test('answers the NAP-SHELL handshake exactly once for the active frame', async 
     },
     targetOrigin: '*',
   }]);
+});
+
+test('requests a password before opening an encrypted launch link', async () => {
+  const container = new FakeElement('main');
+  const status = new FakeElement('p');
+  const encrypted = await encodeEncryptedFragment({ pointer, state: { view: 'private' } }, 'correct horse battery staple');
+  const window = makeWindow(encrypted);
+  let receivedPointer;
+  const opener = createOpener({
+    window,
+    document: new FakeDocument(),
+    container,
+    status,
+    passwordProvider: async () => 'correct horse battery staple',
+    resolver: { resolve: async (value) => {
+      receivedPointer = value;
+      return { verified: true, indexHtml: '<h1>Private target</h1>' };
+    } },
+  });
+
+  await opener.start();
+  assert.equal(receivedPointer, pointer);
+  assert.equal(container.children[0].srcdoc, '<h1>Private target</h1>');
 });

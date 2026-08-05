@@ -36,7 +36,7 @@ pointer can select an independently published napplet. A future version can
 reuse the original compression and encryption pipeline around this envelope,
 but must use a new version marker and explicit key/passphrase UX.
 
-The fragment is intentionally a versioned, URL-safe envelope:
+The public fragment is intentionally a versioned, URL-safe envelope:
 
 ```text
 https://example.invalid/#nw1.<base64url(JSON)> 
@@ -53,10 +53,19 @@ The decoded JSON is:
 ```
 
 The fragment is never sent in the HTTP request, which makes it a good place for
-portable launch state. It is **not encrypted** in this version: anyone holding
-the link can decode it, and browser history, clipboard managers, referrers, or
-screenshots may expose it. A future encrypted state format must be designed as
-a separate version instead of quietly changing the meaning of `nw1`.
+portable launch state. The `nw1` form is **not encrypted**: anyone holding the
+link can decode it, and browser history, clipboard managers, referrers, or
+screenshots may expose it. For sensitive state, the shell supports a separate
+`nwe1` format:
+
+```text
+https://example.invalid/#nwe1.<salt>.<iv>.<ciphertext>
+```
+
+It derives an AES-GCM key from a user-supplied password with PBKDF2-SHA-256,
+and asks for that password at launch time. This protects the fragment contents
+at rest, but does not make target content private after it is opened and does
+not remove the need to verify the target artifact.
 
 The envelope is deliberately small and bounded. It carries a pointer and JSON
 state, not executable HTML, JavaScript, private keys, relay credentials, or
@@ -69,7 +78,7 @@ before they reach an iframe.
 URL hash
    |
    v
-decode + validate nw1 envelope
+decode + validate nw1 or nwe1 envelope
    |
    v
 resolver(pointer)
@@ -106,7 +115,7 @@ That gives us a useful progression:
 - **Next:** real relay/outbox/identity/intent service backends, an installed
   napplet catalog, multiple runtime windows, and stronger offline prefetch UX.
 - **Later:** NAP-INTENT/NAP-INC integration, installed target catalog, multiple
-  windows/tabs, encrypted fragment state, and nsite deployment tooling.
+  windows/tabs, and nsite deployment tooling.
 
 ## Security and compatibility invariants
 

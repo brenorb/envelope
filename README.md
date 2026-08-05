@@ -8,6 +8,16 @@ The first slice turns a link fragment into a verified-target launch request:
 https://your-nsite.example/#nw1.<base64url(JSON)> 
 ```
 
+For state that should not be readable from the URL, the shell also accepts a
+password-protected envelope:
+
+```text
+https://your-nsite.example/#nwe1.<salt>.<iv>.<ciphertext>
+```
+
+The encrypted form uses AES-GCM with a PBKDF2-derived key. The password is not
+stored in the link; the opener asks for it locally.
+
 See [research/architecture.md](research/architecture.md) for the protocol
 research, security boundary, and implementation roadmap.
 
@@ -27,14 +37,12 @@ while tests and the demo use a deterministic in-memory resolver.
 
 ## Current scope
 
-- versioned `#nw1.` fragment codec;
+- versioned `#nw1.` public and `#nwe1.` encrypted fragment codecs;
 - bounded JSON state and NIP-19 pointer validation;
 - resolver-driven target loading;
 - opaque sandboxed iframe with post-load launch state;
 - bundled Paja/NIP-5D resolver and Kehto NAP-SHELL bridge;
 - built-in opener napplet that hands the fragment launch request to the target;
 - explicit loading, empty, and error states;
-- tests for malformed links, tampering, iframe policy, and state delivery.
-
-The nsite deployer and full Paja/NIP-5D adapter are deliberately next steps;
-they are documented rather than hidden behind a fake network implementation.
+- tests for malformed links, tampering, iframe policy, encryption, and state
+  delivery.

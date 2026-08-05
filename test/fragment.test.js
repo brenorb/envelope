@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   MAX_FRAGMENT_LENGTH,
   decodeFragment,
+  decodeEncryptedFragment,
   encodeFragment,
+  encodeEncryptedFragment,
 } from '../src/fragment.js';
 
 const pointer = 'naddr1qqxnzd3h9kummnw3e4kzmr0d3sk6t';
@@ -51,4 +53,28 @@ test('does not execute values that look like JSON or JavaScript', () => {
   const decoded = decodeFragment(encodeFragment(input));
 
   assert.equal(decoded.state.html, input.state.html);
+});
+
+test('round trips an encrypted launch envelope with a password', async () => {
+  const fragment = await encodeEncryptedFragment({
+    pointer,
+    state: { private: 'not visible in the link payload' },
+  }, 'correct horse battery staple');
+
+  assert.match(fragment, /^#nwe1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+  assert.deepEqual(await decodeEncryptedFragment(fragment, 'correct horse battery staple'), {
+    version: 1,
+    pointer,
+    state: { private: 'not visible in the link payload' },
+  });
+  assert.throws(() => decodeFragment(fragment), /encrypted|password/i);
+});
+
+test('rejects an encrypted envelope with the wrong password', async () => {
+  const fragment = await encodeEncryptedFragment({ pointer, state: { secret: true } }, 'a sufficiently long password');
+
+  await assert.rejects(
+    () => decodeEncryptedFragment(fragment, 'another sufficiently long password'),
+    /invalid encrypted fragment or password/i,
+  );
 });

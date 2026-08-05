@@ -1,4 +1,4 @@
-import { decodeFragment } from './fragment.js';
+import { decodeEncryptedFragment, decodeFragment, isEncryptedFragment } from './fragment.js';
 
 /**
  * Create the static opener controller.
@@ -15,13 +15,17 @@ import { decodeFragment } from './fragment.js';
  *   resolver: { resolve: (pointer: string) => Promise<ResolvedTarget> },
  *   bootstrapHtml?: string,
  *   shellHost?: { prepareHtml: Function, registerFrame: Function, destroy?: Function },
+ *   passwordProvider?: () => Promise<string>,
  *   onError?: (error: unknown) => void,
  * }} options
  */
-export function createOpener({ window, document, container, status, resolver, bootstrapHtml, shellHost, onError } = {}) {
+export function createOpener({ window, document, container, status, resolver, bootstrapHtml, shellHost, passwordProvider, onError } = {}) {
   assertOptions({ window, document, container, status, resolver });
   if (bootstrapHtml !== undefined && typeof bootstrapHtml !== 'string') {
     throw new Error('bootstrapHtml must be a string');
+  }
+  if (passwordProvider !== undefined && typeof passwordProvider !== 'function') {
+    throw new Error('passwordProvider must be a function');
   }
 
   let generation = 0;
@@ -68,9 +72,19 @@ export function createOpener({ window, document, container, status, resolver, bo
 
     let request;
     try {
-      request = decodeFragment(hash);
+      if (isEncryptedFragment(hash)) {
+        if (!passwordProvider) throw new Error('password required for encrypted fragment');
+        request = await decodeEncryptedFragment(hash, await passwordProvider());
+      } else {
+        request = decodeFragment(hash);
+      }
     } catch (error) {
-      showError('This link is not a valid Hosted Nowhere launch link.', error);
+      showError(
+        isEncryptedFragment(hash)
+          ? 'This encrypted link could not open. Check the password and try again.'
+          : 'This link is not a valid Hosted Nowhere launch link.',
+        error,
+      );
       return;
     }
 

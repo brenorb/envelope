@@ -52,7 +52,8 @@ Before production deployment:
 - configure the relay and Blossom allowlists in the host;
 - use verified NIP-5D manifests and content-addressed blobs;
 - add a Cache Storage artifact cache if repeat offline launches matter;
-- choose an encrypted fragment version if state is sensitive;
+- use the `#nwe1.` encrypted fragment format if state is sensitive; the shell
+  prompts for the password and never puts it in the URL;
 - test on the actual nsite gateway and with a cold browser cache.
 
 The current official bridge advertises only `shell` by default. Relay,
