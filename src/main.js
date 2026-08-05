@@ -1,6 +1,7 @@
 import { createOpener } from './opener.js';
 import { createBrowserPajaResolver } from './paja-resolver.js';
 import { DEFAULT_OPENER_HTML } from './opener-napplet.js';
+import { createKehtoShellHost } from './kehto-shell.js';
 
 const stage = document.querySelector('#stage');
 const status = document.querySelector('#status');
@@ -14,6 +15,7 @@ const resolver = createBrowserPajaResolver({
   ...runtimeConfig,
   ...(paja?.resolvePointer ? { resolve: paja.resolvePointer } : {}),
 });
+const shellHost = createKehtoShellHost({ domains: runtimeConfig.domains ?? ['shell'] });
 
 const opener = createOpener({
   window,
@@ -22,6 +24,7 @@ const opener = createOpener({
   status,
   resolver,
   bootstrapHtml: DEFAULT_OPENER_HTML,
+  shellHost,
   onError: (error) => console.error('[hosted-nowhere]', error),
 });
 

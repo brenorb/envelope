@@ -12,12 +12,13 @@ import { decodeFragment } from './fragment.js';
  *   document: DocumentLike,
  *   container: ElementLike,
  *   status: ElementLike,
-   *   resolver: { resolve: (pointer: string) => Promise<ResolvedTarget> },
+ *   resolver: { resolve: (pointer: string) => Promise<ResolvedTarget> },
  *   bootstrapHtml?: string,
+ *   shellHost?: { prepareHtml: Function, registerFrame: Function, destroy?: Function },
  *   onError?: (error: unknown) => void,
  * }} options
  */
-export function createOpener({ window, document, container, status, resolver, bootstrapHtml, onError } = {}) {
+export function createOpener({ window, document, container, status, resolver, bootstrapHtml, shellHost, onError } = {}) {
   assertOptions({ window, document, container, status, resolver });
   if (bootstrapHtml !== undefined && typeof bootstrapHtml !== 'string') {
     throw new Error('bootstrapHtml must be a string');
@@ -28,6 +29,7 @@ export function createOpener({ window, document, container, status, resolver, bo
   let activeFrame;
   let activeRole;
   let activeRequest;
+  let activeFrameCleanup;
   let shellInitialized = false;
 
   const onHashChange = () => { void load(); };
@@ -36,6 +38,7 @@ export function createOpener({ window, document, container, status, resolver, bo
     const data = event.data;
     if (!data || typeof data.type !== 'string') return;
     if (data.type === 'shell.ready') {
+      if (shellHost) return;
       if (shellInitialized) return;
       shellInitialized = true;
       activeFrame.contentWindow?.postMessage({
@@ -114,12 +117,18 @@ export function createOpener({ window, document, container, status, resolver, bo
       frame.contentWindow?.postMessage(message, '*');
       setStatus(status, 'Target is ready.', 'ready');
     });
-    frame.srcdoc = target.indexHtml;
+    if (activeFrameCleanup) activeFrameCleanup();
+    activeFrameCleanup = undefined;
     activeFrame = frame;
     activeRole = role;
     activeRequest = request;
     shellInitialized = false;
     replaceChildren(container, frame);
+    activeFrameCleanup = shellHost?.registerFrame(frame, target.identity ?? {
+      dTag: 'hosted-nowhere-opener',
+      aggregateHash: '0'.repeat(64),
+    });
+    frame.srcdoc = shellHost ? shellHost.prepareHtml(target.indexHtml, target) : target.indexHtml;
     setStatus(status, 'Target is ready.', 'ready');
   }
 
@@ -139,6 +148,9 @@ export function createOpener({ window, document, container, status, resolver, bo
     window.removeEventListener('message', onMessage);
     activeFrame = undefined;
     activeRequest = undefined;
+    activeFrameCleanup?.();
+    activeFrameCleanup = undefined;
+    shellHost?.destroy?.();
     started = false;
   }
 

@@ -1,8 +1,9 @@
 # Integrating the real Paja runtime
 
-The checked-in shell is intentionally static. It looks for a host-provided
-`globalThis.hostedNowherePaja.resolvePointer` function and adapts that function
-with `createPajaResolver`.
+The checked-in shell is static and bundles a browser-compatible NIP-5D
+resolver. It also uses Kehto's official shell bridge for the NAP-SHELL
+handshake. A host can override pointer resolution with
+`globalThis.hostedNowherePaja.resolvePointer`, but that is optional.
 
 ```js
 import { resolvePajaPointer } from '@kehto/paja';
@@ -16,6 +17,18 @@ globalThis.hostedNowherePaja = {
 };
 ```
 
+For a normal build, configure relay and Blossom hints before `main.js` runs:
+
+```html
+<script>
+  globalThis.hostedNowhereConfig = {
+    relays: ['wss://your-relay.example'],
+    blossomServers: ['https://your-blossom.example'],
+    domains: ['shell']
+  };
+</script>
+```
+
 The resolver must return Paja's verified result, including `indexHtml`,
 `dTag`, and `aggregateHash`. The adapter then marks the target as verified for
 the opener. It must not be replaced with a fetch of arbitrary HTML from a URL
@@ -23,9 +36,15 @@ in the fragment.
 
 ## Building the nsite
 
-Build or copy the static output (`index.html` and `src/`) into the directory
-deployed by `nsyte`. The nsite manifest is only the delivery layer; the target
-napplet remains a separate NIP-5D artifact resolved by Paja.
+Build the static output with `npm run build`, then deploy `dist/` with `nsyte`.
+For SPA fallback behavior, use the nsyte fallback option:
+
+```bash
+nsyte deploy dist --fallback=/index.html
+```
+
+The nsite manifest is only the delivery layer; the target napplet remains a
+separate NIP-5D artifact resolved by Paja primitives.
 
 Before production deployment:
 
@@ -36,6 +55,7 @@ Before production deployment:
 - choose an encrypted fragment version if state is sensitive;
 - test on the actual nsite gateway and with a cold browser cache.
 
-The shell's current `main.js` intentionally shows a clear error when no Paja
-adapter is installed. That is safer than silently turning the link into an
-unverified remote-HTML loader.
+The current official bridge advertises only `shell` by default. Relay,
+identity, intent, and other NAP services must be wired to real host backends
+before adding those domains to `hostedNowhereConfig.domains`; the runtime never
+advertises a capability merely because a target requests it.

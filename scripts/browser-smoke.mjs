@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
+import { encodeFragment } from '../src/fragment.js';
+
+const baseUrl = process.env.HOSTED_NOWHERE_URL ?? 'http://127.0.0.1:4173';
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+});
+
+try {
+  const page = await browser.newPage();
+  await page.addInitScript(() => {
+    globalThis.hostedNowherePaja = {
+      resolvePointer: async () => ({
+        indexHtml: `<!doctype html>
+          <html><head></head><body>
+            <h1 id="target">Resolved target</h1>
+            <script>
+              addEventListener('message', (event) => {
+                if (event.data?.type === 'opener.init') {
+                  document.body.dataset.state = JSON.stringify(event.data.state);
+                }
+              });
+            <\/script>
+          </body></html>`,
+        dTag: 'demo',
+        aggregateHash: 'a'.repeat(64),
+        manifest: { title: 'Demo' },
+        relays: [],
+        blossomServers: [],
+      }),
+    };
+  });
+
+  const pointer = 'naddr1qqxnzd3h9kummnw3e4kzmr0d3sk6t';
+  const url = `${baseUrl}/${encodeFragment({ pointer, state: { view: 'timeline' } })}`;
+  await page.goto(url);
+  await page.waitForFunction(() => document.querySelector('#status')?.textContent === 'Target is ready.');
+
+  const frameHandle = await page.locator('iframe').elementHandle();
+  assert.ok(frameHandle, 'target iframe should be mounted');
+  const frame = await frameHandle.contentFrame();
+  assert.ok(frame, 'target iframe should have a document');
+  assert.equal(await page.locator('iframe').getAttribute('sandbox'), 'allow-scripts');
+  assert.equal(await frame.locator('#target').textContent(), 'Resolved target');
+  assert.equal(await frame.evaluate(() => document.body.dataset.state), '{"view":"timeline"}');
+  assert.ok(await frame.locator('meta[http-equiv="Content-Security-Policy"]').count());
+
+  console.log('browser smoke: opener -> verified target -> state delivery passed');
+} finally {
+  await browser.close();
+}

@@ -100,10 +100,11 @@ bytes remain untrusted until their hashes are checked again.
 
 That gives us a useful progression:
 
-- **MVP:** static shell, hash envelope, resolver seam, sandboxed target, state
-  delivery, deterministic tests.
-- **Next:** Paja resolver adapter using NIP-19 decoding, relay discovery,
-  NIP-5D verification, Blossom fetch, and verified Cache Storage.
+- **MVP:** static shell, hash envelope, bundled Paja/NIP-5D resolver, signed
+  manifest/blob verification, Kehto NAP-SHELL bridge, built-in opener napplet,
+  sandboxed target, and state delivery.
+- **Next:** real relay/outbox/identity/intent service backends, an installed
+  napplet catalog, multiple runtime windows, and stronger offline prefetch UX.
 - **Later:** NAP-INTENT/NAP-INC integration, installed target catalog, multiple
   windows/tabs, encrypted fragment state, and nsite deployment tooling.
 

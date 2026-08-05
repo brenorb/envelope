@@ -8,16 +8,19 @@
     "test": "node --test test/*.test.js",
     "check": "node --check src/fragment.js && node --check src/opener.js && node --check src/opener-napplet.js && node --check src/paja-pointer-resolver.js && node --check src/paja-resolver.js && node --check src/main.js",
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "browser:smoke": "node scripts/browser-smoke.mjs"
   },
   "license": "MIT",
   "dependencies": {
     "@kehto/paja": "^0.11.0",
+    "@kehto/shell": "^0.19.2",
     "@napplet/core": "^0.31.1",
     "@napplet/nap": "^0.31.2",
     "nostr-tools": "^2.24.1"
   },
   "devDependencies": {
+    "playwright": "^1.54.2",
     "vite": "^8.2.0"
   }
 }

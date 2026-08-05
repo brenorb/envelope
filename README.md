@@ -31,7 +31,8 @@ while tests and the demo use a deterministic in-memory resolver.
 - bounded JSON state and NIP-19 pointer validation;
 - resolver-driven target loading;
 - opaque sandboxed iframe with post-load launch state;
-- adapter boundary for Paja's verified NIP-5D resolver;
+- bundled Paja/NIP-5D resolver and Kehto NAP-SHELL bridge;
+- built-in opener napplet that hands the fragment launch request to the target;
 - explicit loading, empty, and error states;
 - tests for malformed links, tampering, iframe policy, and state delivery.
 
