@@ -31,6 +31,13 @@
       <button type="submit">Open encrypted link</button>
     </form>
     <main id="stage" aria-label="Opened napplet"></main>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch((error) => {
+          console.warn('[hosted-nowhere] offline shell cache unavailable', error);
+        });
+      }
+    </script>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>

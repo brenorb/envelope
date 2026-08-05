@@ -11,10 +11,11 @@ const browser = await chromium.launch({
 try {
   const page = await browser.newPage();
   await page.addInitScript(() => {
-    globalThis.__hostedNowhereFailLive = false;
     globalThis.hostedNowherePaja = {
       resolvePointer: async () => {
-        if (globalThis.__hostedNowhereFailLive) throw new Error('live resolver intentionally disabled');
+        if (sessionStorage.getItem('hosted-nowhere-disable-live') === '1') {
+          throw new Error('live resolver intentionally disabled');
+        }
         return {
           indexHtml: `<!doctype html>
             <html><head></head><body>
@@ -51,10 +52,11 @@ try {
   assert.equal(await frame.evaluate(() => document.body.dataset.state), '{"view":"timeline"}');
   assert.ok(await frame.locator('meta[http-equiv="Content-Security-Policy"]').count());
   assert.equal(await page.evaluate(() => typeof globalThis.hostedNowhereOffline?.prefetch), 'function');
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
 
   const replayHash = encodeFragment({ pointer, state: { view: 'offline-replay' } });
   await page.evaluate((hash) => {
-    globalThis.__hostedNowhereFailLive = true;
+    sessionStorage.setItem('hosted-nowhere-disable-live', '1');
     window.location.hash = hash.slice(1);
   }, replayHash);
   await page.waitForFunction(() => document.querySelector('#status')?.textContent === 'Target is ready.');
@@ -64,7 +66,18 @@ try {
     '{"view":"offline-replay"}',
   );
 
-  console.log('browser smoke: opener -> verified target -> state delivery -> offline cache replay passed');
+  await page.reload();
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+  await page.context().setOffline(true);
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('#status')?.textContent === 'Target is ready.');
+  await page.frameLocator('iframe').locator('#target').waitFor();
+  assert.equal(
+    await page.frameLocator('iframe').locator('body').getAttribute('data-state'),
+    '{"view":"offline-replay"}',
+  );
+
+  console.log('browser smoke: opener -> verified target -> state delivery -> offline shell replay passed');
 } finally {
   await browser.close();
 }

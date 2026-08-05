@@ -44,6 +44,7 @@ while tests and the demo use a deterministic in-memory resolver.
 - bundled Paja/NIP-5D resolver and Kehto NAP-SHELL bridge;
 - built-in opener napplet that hands the fragment launch request to the target;
 - Cache Storage reuse for verified targets after the first online launch;
+- service-worker caching for reloading the static shell without its gateway;
 - explicit loading, empty, and error states;
 - tests for malformed links, tampering, iframe policy, encryption, and state
   delivery.

@@ -111,7 +111,8 @@ reuse the exact verified HTML and identity without resolving the pointer again.
 It checks the stored HTML checksum and discards malformed or corrupted
 records. This makes the shell offline-capable after a successful launch or an
 explicit prefetch; it cannot make a target's own network-backed features
-offline.
+offline. A same-origin service worker separately caches the shell document and
+its assets so a later reload does not need the nsite gateway either.
 
 That gives us a useful progression:
 

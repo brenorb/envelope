@@ -42,6 +42,12 @@ checksum under the pointer. Later launches can use that record without relay
 or Blossom access. The cache is not a substitute for verification: a miss
 still goes through Paja, and corrupted records are discarded.
 
+The built shell also registers `sw.js`. After the first online visit and one
+controlled reload, it caches same-origin shell navigations and assets so the
+opener page itself can reload without the nsite gateway. This is intentionally
+separate from the target cache: service-worker availability does not imply
+that a target's own remote data is cached.
+
 To prefetch a pointer while online, call the small host API exposed by the
 shell:
 
