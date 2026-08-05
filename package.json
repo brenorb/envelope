@@ -1,0 +1,12 @@
+{
+  "name": "hosted-nowhere",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "An nsite-hosted opener shell for Nostr napplets",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/fragment.js && node --check src/opener.js && node --check src/main.js"
+  },
+  "license": "MIT"
+}
