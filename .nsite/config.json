@@ -8,8 +8,8 @@
     "wss://relay.mostr.pub"
   ],
   "servers": [
-    "https://blossom.primal.net",
-    "https://cdn.hzrd149.com"
+    "https://cdn.hzrd149.com",
+    "https://blossom.primal.net"
   ],
   "id": "nowhere",
   "title": "Hosted Nowhere",

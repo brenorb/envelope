@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'hosted-nowhere:shell:v2';
+const SHELL_CACHE = 'hosted-nowhere:shell:v3';
 const SHELL_ASSETS = [
   './',
   './index.html',
