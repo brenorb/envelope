@@ -1,157 +1,163 @@
-# Hosted Nowhere: research notes and architecture
+# Hosted Nowhere: protocol research and architecture
 
-Status: working design for the first implementation, 2026-08-05.
+Research and implementation baseline: 2026-08-06.
 
-## The protocol boundary
+The implementation was checked against:
 
-The idea combines three layers that should stay separate:
+- `kehto/web` commit `d23797957fe7430a20f98a051627f910a305b2a9` and
+  `@kehto/paja` 0.11.0;
+- `napplet/naps` commit `5ac0490461ca6fec2f0d2e45b4835cf9bc08de24`;
+- `nsyte` commit `61025452a45357e0d62d62887ce9316823895337` and
+  CLI 0.27.2.
 
-1. **nsite** is the delivery format for the opener shell. NIP-5A describes
-   static files as Blossom blobs addressed by SHA-256 and a signed Nostr
-   manifest that maps paths to those hashes. The current nsite draft uses
-   kinds `15128` for a root site and `35128` for a named site.
-2. **napplet** is the target application format. The current Kehto reference
-   implementation follows draft NIP-5D and uses kinds `5129`, `15129`, and
-   `35129`. Its manifest is also content-addressed, but it is intentionally a
-   different protocol from an nsite manifest.
-3. **Paja/Kehto** is a browser host runtime. It resolves an `naddr` or
-   `nevent`, verifies the signed manifest, verifies the NIP-5A aggregate and
-   every Blossom blob, then assembles `/index.html` into an opaque-origin
-   iframe. The iframe receives the runtime's NAP-SHELL environment and uses
-   `postMessage` for NAP traffic.
+These protocols are still evolving. Package versions and source commits are
+part of the compatibility boundary, not incidental dependencies.
 
-The first implementation therefore does not pretend to be an nsite gateway or
-to replace Paja. It implements the static opener shell and a resolver boundary
-that can be backed by Paja's verified resolution pipeline.
+## Three distinct layers
 
-## What the link contains
+1. **nsite delivery.** NIP-5A/nsyte maps static paths to Blossom hashes in a
+   signed kind-15128 root or kind-35128 named-site event.
+2. **Paja runtime.** The nsite files are Paja's browser host, config, and the
+   small Hosted Nowhere coordinator. The config's `runtime-pointer` target is
+   the opener napplet.
+3. **NIP-5D napplets.** Opener and target are independent signed,
+   content-addressed artifacts. Named napplets use kind 35129, distinct from
+   the nsite's kind 35128.
 
-The original Hosted Nowhere implementation is a useful reference, but its
-fragment is not a drop-in format for this project. Its codec serializes a tool,
-applies dictionary substitutions, uses raw DEFLATE, and base64url-encodes the
-result. Password encryption is an optional outer layer; the renderer treats an
-encrypted fragment like any other fragment it cannot decode until the user
-supplies the password. This project uses a separate `nw1` launch envelope so a
-pointer can select an independently published napplet. A future version can
-reuse the original compression and encryption pipeline around this envelope,
-but must use a new version marker and explicit key/passphrase UX.
+Conflating those layers creates a false implementation: a web page that looks
+like Paja is not a Paja runtime, and an nsite manifest is not a napplet
+manifest.
 
-The public fragment is intentionally a versioned, URL-safe envelope:
+## Actual launch sequence
 
 ```text
-https://example.invalid/#nw1.<base64url(JSON)> 
+browser URL #nw1... or #nwe1...
+  -> nsite serves static Paja runtime (fragment never leaves browser)
+  -> Paja verifies and starts pinned opener naddr
+  -> Hosted Nowhere adapter sends raw window.location.hash to opener frame
+  -> opener parses or decrypts pointer + state/intent
+  -> opener sends pointer-only request to authenticated host
+  -> Paja resolves signature + aggregate + every target blob hash
+  -> adapter returns verified target manifest intent contracts
+  -> opener calls window.napplet.intent.invoke(...)
+  -> Paja selects the sole compatible installed handler
+  -> Paja waits for target shell.ready
+  -> Paja delivers runtime-attested inc.event with exact payload
 ```
 
-The decoded JSON is:
+The coordinator authenticates messages by `event.source` against Paja's opener
+frame. The iframe remains opaque (`sandbox="allow-scripts"`, never
+`allow-same-origin`). A hash change reloads the runtime, resetting Paja's
+in-memory installed catalog so an older same-archetype napplet cannot create an
+ambiguous handler selection.
+
+## Fragment contract
+
+The public form is `#nw1.<base64url(JSON)>`; the encrypted form is
+`#nwe1.<salt>.<iv>.<AES-GCM ciphertext>`. The password is shared out of band
+and entered only inside the opener napplet.
+
+Decoded version-1 data contains:
 
 ```json
 {
   "v": 1,
   "pointer": "naddr1... or nevent1...",
-  "state": { "any": "JSON value" }
+  "state": { "optional": "JSON payload" },
+  "intent": {
+    "archetype": "optional-explicit-role",
+    "action": "open",
+    "convention": "napplet:role/open",
+    "payload": { "optional": "explicit payload" },
+    "behavior": { "focus": true, "reuse": true }
+  }
 }
 ```
 
-The fragment is never sent in the HTTP request, which makes it a good place for
-portable launch state. The `nw1` form is **not encrypted**: anyone holding the
-link can decode it, and browser history, clipboard managers, referrers, or
-screenshots may expose it. For sensitive state, the shell supports a separate
-`nwe1` format:
+When `intent` is absent, the opener uses the first intent contract advertised
+by the verified target manifest and sends `state` as its payload. When intent
+is explicit, the opener requires an exact advertised archetype/convention
+match. Routing slugs, conventions, behavior booleans, fragment length, and JSON
+payload size are bounded before dispatch.
 
-```text
-https://example.invalid/#nwe1.<salt>.<iv>.<ciphertext>
-```
+Plain `nw1` is encoding, not privacy. `nwe1` uses PBKDF2-SHA-256 and AES-GCM,
+but encryption protects only link contents at rest; the selected napplet still
+receives the decrypted payload.
 
-It derives an AES-GCM key from a user-supplied password with PBKDF2-SHA-256,
-and asks for that password at launch time. This protects the fragment contents
-at rest, but does not make target content private after it is opened and does
-not remove the need to verify the target artifact.
+## Why target loading and intent delivery are separate
 
-The envelope is deliberately small and bounded. It carries a pointer and JSON
-state, not executable HTML, JavaScript, private keys, relay credentials, or
-signatures. The target's bytes come from the resolver and must be verified
-before they reach an iframe.
+Paja's intent catalog is populated only from verified installed manifests.
+The coordinator first calls `loadPointer(pointer)`, which verifies and installs
+the selected target. It then returns the manifest's archetype contracts to the
+opener. The opener invokes NAP-INTENT without a privileged explicit handler;
+in a fresh catalog the selected target is the sole compatible candidate.
 
-## Launch flow
+Paja's browser intent controller reuses that exact verified target generation,
+waits for its source-bound `shell.ready`, and sends `inc.event`. This preserves
+the NAP trust model; a direct custom `postMessage(state)` would bypass it.
 
-```text
-URL hash
-   |
-   v
-decode + validate nw1 or nwe1 envelope
-   |
-   v
-resolver(pointer)
-   |  (Paja adapter: relay -> manifest -> signature/aggregate/blob checks)
-   v
-verified { indexHtml, identity, metadata }
-   |
-   v
-iframe sandbox="allow-scripts" + srcdoc
-   |
-   v
-postMessage({ type: "opener.init", pointer, state })
-```
+## Offline findings
 
-The opener never grants `allow-same-origin`, never injects `window.nostr`, and
-never renders unverified resolver output. The state message is a small
-compatibility seam for the first slice. A production Paja adapter should map
-it to the selected NAP-INTENT convention and runtime-attested NAP-INC event,
-rather than treating a generic window message as a NAP protocol message.
+Two independent caches are required:
 
-## What “offline” means here
+- the service worker precaches the nsite document, Paja host, config, and
+  Hosted Nowhere adapter;
+- Kehto's NIP-5D Cache Storage implementation retains verified blobs and
+  recomputes hashes on reuse.
 
-The nsite opener shell itself is static and can be served from a local cache.
-The first launch of a target normally needs relay and Blossom access unless the
-target artifact is already in a verified local cache. Paja's documented cache
-strategy uses Cache Storage for verified blobs and aggregate records; cached
-bytes remain untrusted until their hashes are checked again. Hosted Nowhere
-adds a small pointer-to-target cache around that resolver so the shell can
-reuse the exact verified HTML and identity without resolving the pointer again.
-It checks the stored HTML checksum and discards malformed or corrupted
-records. This makes the shell offline-capable after a successful launch or an
-explicit prefetch; it cannot make a target's own network-backed features
-offline. A same-origin service worker separately caches the shell document and
-its assets so a later reload does not need the nsite gateway either.
+Upstream Paja 0.11.0 still queried relays for the signed manifest before using
+its blob cache. Its artifact cache exposes coordinate methods, but the runtime
+resolver does not use them. The custom static build therefore adds a narrow
+signed-event cache around `resolvePajaPointer()`:
 
-That gives us a useful progression:
+- cache only an event whose full `resolveNapplet()` verification succeeded;
+- key it by the exact NIP-19 pointer;
+- require it to still match the pointer and a NIP-5D kind;
+- pass it through the normal signature, aggregate, and blob verification path
+  on every reuse;
+- prefer it immediately when `navigator.onLine === false`, or as fallback when
+  all relays fail.
 
-- **MVP:** static shell, hash envelope, bundled Paja/NIP-5D resolver, signed
-  manifest/blob verification, Kehto NAP-SHELL bridge, built-in opener napplet,
-  sandboxed target, state delivery, and offline reuse of verified targets.
-- **Next:** real relay/outbox/identity/intent service backends, an installed
-  napplet catalog, multiple runtime windows, and stronger offline prefetch UX.
-- **Later:** NAP-INTENT/NAP-INC integration, installed target catalog, multiple
-  windows/tabs, and nsite deployment tooling.
+This is not trusting cached HTML. The cached signed event supplies the manifest
+that lets the existing resolver re-verify cached content-addressed bytes.
 
-## Security and compatibility invariants
+The public live test proves offline behavior after one successful online open.
+It does not claim a never-before-seen target can open offline, or that a
+target's own external API calls become offline-capable.
 
-- Decode only the version and JSON types the shell understands.
-- Bound fragment length and state size before parsing or rendering.
-- Treat pointers as data; do not interpolate them into HTML or JavaScript.
-- Accept target HTML only from a resolver that promises verification.
-- Sandbox target frames with `allow-scripts` only; no `allow-same-origin`.
-- Send launch state after the target's `load` event so an applet can install its
-  listener first.
-- Use `postMessage(..., "*")` only because an opaque sandbox has no stable
-  origin; authenticate the source window on the receiver side.
-- Preserve an explicit error state instead of falling back to arbitrary HTML.
-- Do not call the link “private” or “fully offline” when the fragment is plain
-  JSON or the target has not been cached.
+## Deployment discoveries
 
-## Sources
+- A URL fragment needs no nsyte SPA fallback because it is absent from the HTTP
+  request. `--fallback=/index.html` only affects unknown path requests.
+- Blossom content hashes do not encode MIME metadata. One server stored the
+  valid service worker as `text/plain`, which Chrome rejects. Server order in
+  the nsite manifest therefore matters when gateway MIME is inherited from a
+  mirror.
+- nsyte's secret scanner flags Paja's token parsers, Bunker URL parser, and
+  generated development signer code. Every flagged region was inspected as a
+  false positive before the explicit scanner bypass used for deployment.
+- A named nsite (`nowhere`) avoids replacing the author's existing root nsite.
 
-- [NIP-5A: Static Websites (nsites)](https://nips.nostr.com/5a)
-- [nsite.run overview](https://nsite.run/)
-- [kehto/web runtime reference](https://github.com/kehto/web)
-- [Kehto Runtime Protocol Reference](https://github.com/kehto/web/blob/main/RUNTIME-SPEC.md)
-- [Kehto Paja package](https://github.com/kehto/web/tree/main/packages/paja)
-- [Paja runtime resolver](https://github.com/kehto/web/blob/main/packages/paja/src/runtime-resolver.ts)
-- [NIP-5D source reference](https://github.com/nostr-protocol/nips/pull/2303)
-- [NAP registry](https://github.com/napplet/naps)
-- [Original Hosted Nowhere implementation](https://github.com/5t34k/nowhere)
-- [Hosted Nowhere technical architecture](https://hostednowhere.com/how-it-works)
+## Security invariants
 
-The NIP-5D and NAP documents are drafts. This project should pin any future
-adapter to a reviewed commit and keep protocol-specific code behind the
-resolver interface.
+- The top-level runtime transports but never decodes the fragment.
+- Only the opener receives the encrypted fragment or password.
+- The target pointer is bounded NIP-19 data, never a URL or HTML source.
+- Paja verifies event signature, NIP-5A aggregate, and every Blossom blob.
+- Intent contracts come from the verified target manifest.
+- State crosses into the target through NAP-INTENT/NAP-INC after readiness.
+- Opaque frame sources, request IDs, and generations reject forged or stale
+  messages.
+- Cached events and bytes are reverified; corruption fails closed.
+- No signing secret is committed or embedded in deployed assets.
+
+## Primary sources
+
+- [nsyte](https://github.com/sandwichfarm/nsyte)
+- [Kehto Paja](https://github.com/kehto/web/tree/main/packages/paja)
+- [Kehto runtime specification](https://github.com/kehto/web/blob/main/RUNTIME-SPEC.md)
+- [NAP-INTENT](https://github.com/napplet/naps/blob/main/naps/NAP-INTENT.md)
+- [NAP-INC](https://github.com/napplet/naps/blob/main/naps/NAP-INC.md)
+- [NAP-SHELL](https://github.com/napplet/naps/blob/main/naps/NAP-SHELL.md)
+- [Kehto NIP-5D implementation](https://github.com/kehto/web/tree/main/packages/nip/src/5d)
+- [Original Hosted Nowhere](https://github.com/5t34k/nowhere)

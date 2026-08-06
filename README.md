@@ -1,55 +1,80 @@
 # Hosted Nowhere
 
-An nsite-hosted opener shell for content-addressed Nostr napplets.
+Hosted Nowhere is a real nsite containing a customized static
+[`@kehto/paja`](https://github.com/kehto/web/tree/main/packages/paja) runtime.
+An opaque URL fragment selects a signed NIP-5D napplet and carries its launch
+state or NAP-INTENT contract.
 
-The first slice turns a link fragment into a verified-target launch request:
-
-```text
-https://your-nsite.example/#nw1.<base64url(JSON)> 
-```
-
-For state that should not be readable from the URL, the shell also accepts a
-password-protected envelope:
+The deployed proof is:
 
 ```text
-https://your-nsite.example/#nwe1.<salt>.<iv>.<ciphertext>
+https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2onowhere.nsite.lol/#nw1.<opaque-data>
 ```
 
-The encrypted form uses AES-GCM with a PBKDF2-derived key. The password is not
-stored in the link; the opener asks for it locally.
+Run `npm run test:live` to print and verify a complete example link. The test
+opens the public nsite, verifies exact state delivery, disables Chromium's
+network, reloads the same URL, and verifies the exact state again.
 
-See [research/architecture.md](research/architecture.md) for the protocol
-research, security boundary, and implementation roadmap.
+## Implementation contract
 
-See [docs/integration.md](docs/integration.md) for wiring the real Paja
-resolver and deploying the shell as an nsite.
+All six required stages are implemented and covered by automated or live proof:
 
-The single source of truth for the six-point implementation contract is
-[outputs/napplet-nowhere-status/implementation-status.xlsx](outputs/napplet-nowhere-status/implementation-status.xlsx).
-It records the proof required before any item can be marked complete.
+1. The URL carries a bounded `#nw1.<base64url>` fragment, or an encrypted
+   `#nwe1.<salt>.<iv>.<ciphertext>` fragment.
+2. The URL resolves to the named `nowhere` nsite (kind `35128`).
+3. The nsite's files are the real Paja static runtime plus a narrow Hosted
+   Nowhere adapter.
+4. Paja boots a separately published, signed opener napplet by its `naddr`.
+5. Only the opener sees and decodes the fragment. It asks the host to install
+   the pointer but retains the state locally.
+6. After Paja verifies and starts the selected target, the opener invokes
+   NAP-INTENT. Paja delivers the state as a runtime-attested `inc.event` after
+   the target's `shell.ready` handshake.
+
+The public deployment coordinates and event IDs are recorded in
+[`config/deployment.json`](config/deployment.json). The canonical implementation
+status is [`outputs/napplet-nowhere-status/implementation-status.xlsx`](outputs/napplet-nowhere-status/implementation-status.xlsx).
 
 ## Development
 
 ```bash
+npm install
 npm test
 npm run check
+npm run build:napplets
+npm run build
+npm run test:live
 ```
 
-The browser shell is intentionally dependency-light. The resolver is an
-injection point: production should connect it to Paja/Kehto's NIP-5D resolver,
-while tests and the demo use a deterministic in-memory resolver.
+`npm run build` emits the static nsite to `dist/` with the deployed opener
+pointer pinned in Paja's config. `npm run build:napplets` emits deterministic
+opener and example-target NIP-5D artifacts under `.artifacts/napplets/`.
 
-## Current scope
+To deploy an update:
 
-- versioned `#nw1.` public and `#nwe1.` encrypted fragment codecs;
-- bounded JSON state and NIP-19 pointer validation;
-- resolver-driven target loading;
-- opaque sandboxed iframe with post-load launch state;
-- bundled Paja/NIP-5D resolver and Kehto NAP-SHELL bridge;
-- built-in opener bootstrap that hands the host-decoded launch request to the
-  target (tracked as an interim implementation, not the final opener napplet);
-- Cache Storage reuse for verified targets after the first online launch;
-- service-worker caching for reloading the static shell without its gateway;
-- explicit loading, empty, and error states;
-- tests for malformed links, tampering, iframe policy, encryption, and state
-  delivery.
+```bash
+nsyte validate
+nsyte deploy dist --prompt-sec --sync
+```
+
+The checked-in nsite is named, so deployment does not replace the signing
+account's root nsite.
+
+## What `--fallback` means
+
+`nsyte deploy dist --fallback=/index.html` maps unknown HTTP paths back to the
+SPA entry document. Hosted Nowhere does not need it for launch links: URL
+fragments are never sent in the HTTP request, so every `/#...` link requests
+the normal `/` document. The current deployment therefore has no fallback.
+
+## Offline boundary
+
+The first open needs relay and Blossom access. A successful open precaches the
+nsite files, verified napplet blobs, and the signed pointer events. Later
+reloads can run without the gateway, relays, or Blossom; signatures,
+aggregates, and blob hashes are rechecked before use. This cannot make a
+target's own network-dependent application features offline.
+
+See [`research/architecture.md`](research/architecture.md) for protocol
+findings and trust boundaries, and [`docs/integration.md`](docs/integration.md)
+for the release and verification workflow.
