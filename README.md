@@ -34,6 +34,8 @@ All six required stages are implemented and covered by automated or live proof:
 The public deployment coordinates and event IDs are recorded in
 [`config/deployment.json`](config/deployment.json). The canonical implementation
 status is [`outputs/napplet-nowhere-status/implementation-status.xlsx`](outputs/napplet-nowhere-status/implementation-status.xlsx).
+Signed deployment events are archived under [`evidence/deployment/`](evidence/deployment/)
+and checked against reproducibly built bytes in the test suite.
 
 ## Development
 

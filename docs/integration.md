@@ -63,6 +63,14 @@ and its manifests were accepted by `relay.damus.io`, `nos.lol`,
 `relay.primal.net`, `nostr.mom`, and `relay.mostr.pub`. The resulting pointers
 and event IDs live in `config/deployment.json`.
 
+Exact signed events retrieved from the relays are archived in
+`evidence/deployment/`. `test/deployment-evidence.test.js` verifies every
+signature and pointer coordinate, rebuilds the runtime at the recorded release
+timestamp, and compares every resulting byte hash with the published nsite
+path tags. It performs the same source-to-published-hash check for both
+napplets. `runtimeBuiltAt` is intentionally fixed per deployment so a normal
+`npm run build` reproduces the published nsite bytes.
+
 ## nsite deployment
 
 The nsite uses `.nsite/config.json` and the named identifier `nowhere`:

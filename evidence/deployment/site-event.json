@@ -1,0 +1,27 @@
+{
+  "kind": 35128,
+  "id": "e0da26d0668fe9a78e509639b462940a88c170e2c5af9e8323894d7a1ec851e5",
+  "pubkey": "42d617d410c079de294a7dc3d66685699729543c595ef419d125252cfb88b0b0",
+  "created_at": 1785975895,
+  "tags": [
+    ["d", "nowhere"],
+    ["path", "/__kehto/browser-host.js", "709e528615e124ec35180e5f6ddf2b9c53fa6f2c3316f0ce9feb3326544934d5"],
+    ["path", "/__kehto/config.json", "185a534247fc7ae2fb78a8d47c1bae5daafdd264951335ae43e2b86711ccceef"],
+    ["path", "/index.html", "6fda740a09d5f80cd1dcee450e37c7a69ac3143d9c17177ee927ac9b1118e3e6"],
+    ["path", "/__kehto/nowhere-host.js", "fcc04dec4ca351d0356f5189265a6431b6d390f5ca762eacc861ef180b776160"],
+    ["path", "/sw.js", "d9bcc5b19a1f028daa683ae68ca49168bd179aee5d8e93bc25ae2dbfcb748686"],
+    ["server", "https://cdn.hzrd149.com"],
+    ["server", "https://blossom.primal.net"],
+    ["relay", "wss://relay.nsite.lol"],
+    ["relay", "wss://relay.damus.io"],
+    ["relay", "wss://nos.lol"],
+    ["relay", "wss://relay.primal.net"],
+    ["relay", "wss://nostr.mom"],
+    ["relay", "wss://relay.mostr.pub"],
+    ["title", "Hosted Nowhere"],
+    ["description", "A Paja runtime that opens Nostr napplets and their state directly from a URL fragment."],
+    ["client", "nsyte"]
+  ],
+  "content": "",
+  "sig": "d75af56eca7c372c8554c0e1790382f7e62de8b789226beb492fb0f27676007c83f80319bf36854e9eef5208ae70373a4e87a613101c7853ea8e08b6a0b71fa0"
+}

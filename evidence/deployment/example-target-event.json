@@ -1,0 +1,19 @@
+{
+  "kind": 35129,
+  "id": "bae2f7fdefd03ba160297d5d33b01e4b57e9997bf58881bd159e748d504ec725",
+  "pubkey": "42d617d410c079de294a7dc3d66685699729543c595ef419d125252cfb88b0b0",
+  "created_at": 1785974900,
+  "tags": [
+    ["d", "hosted-nowhere-example"],
+    ["path", "/index.html", "7210c193a56fda8baad83da09bbf0943d869541235d5a8a5939c1fdc73d9c99a"],
+    ["x", "25b406035175501f7745c418b2b97e3a64e8d041675828e10464d462878af14b", "aggregate"],
+    ["server", "https://blossom.primal.net"],
+    ["server", "https://cdn.hzrd149.com"],
+    ["requires", "inc"],
+    ["title", "Hosted Nowhere example target"],
+    ["description", "Displays state delivered from a Hosted Nowhere link through NAP-INTENT."],
+    ["archetype", "hosted-nowhere", "napplet:hosted-nowhere/open"]
+  ],
+  "content": "{}",
+  "sig": "9781c2cb2bfe5e492b93195c0af85306f2b9b0241f90c28b6464665883fcc5e824ff883e35e72c0c6f6d7d328b2d70f71be89d2cd9e5333532b1bd03e92d3346"
+}

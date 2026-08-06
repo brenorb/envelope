@@ -134,7 +134,11 @@ async function runCli() {
   const deployment = JSON.parse(await readFile(resolve(projectRoot, 'config/deployment.json'), 'utf8'));
   const openerPointer = process.env.NOWHERE_OPENER_POINTER ?? deployment.openerPointer;
   const outputDir = process.env.NOWHERE_OUTPUT_DIR ?? resolve(projectRoot, 'dist');
-  const result = await buildPajaRuntime({ outputDir, openerPointer });
+  const builtAt = new Date(deployment.runtimeBuiltAt);
+  if (Number.isNaN(builtAt.valueOf())) {
+    throw new Error('config/deployment.json must contain a valid runtimeBuiltAt timestamp');
+  }
+  const result = await buildPajaRuntime({ outputDir, openerPointer, builtAt });
   process.stdout.write(`Built Paja runtime in ${result.outputDir}\n`);
 }
 
