@@ -15,7 +15,8 @@ const PBKDF2_ITERATIONS = 120_000;
 const NIP19_POINTER = /^(?:naddr|nevent)1[023456789acdefghjklmnpqrstuvwxyz]+$/;
 
 /**
- * @typedef {{ version: 1, pointer: string, state?: unknown }} LaunchRequest
+ * @typedef {{ archetype: string, action?: string, convention: string, payload?: unknown, behavior?: {focus?: boolean, newWindow?: boolean, reuse?: boolean} }} LaunchIntent
+ * @typedef {{ version: 1, pointer: string, state?: unknown, intent?: LaunchIntent }} LaunchRequest
  */
 
 /**
@@ -48,9 +49,10 @@ export function createFragmentDecoder(runtime = globalThis) {
         version: 1,
         pointer: decoded.pointer,
         ...(Object.hasOwn(decoded, 'state') ? { state: decoded.state } : { state: undefined }),
+        ...(Object.hasOwn(decoded, 'intent') ? { intent: normalizeIntentValue(decoded.intent) } : {}),
       };
     } catch (error) {
-      if (error instanceof Error && /pointer|state|version|payload/.test(error.message)) throw error;
+      if (error instanceof Error && /pointer|state|version|payload|intent/.test(error.message)) throw error;
       throw new Error('invalid fragment payload');
     }
   }
@@ -83,6 +85,7 @@ export function createFragmentDecoder(runtime = globalThis) {
         version: 1,
         pointer: decoded.pointer,
         ...(Object.hasOwn(decoded, 'state') ? { state: decoded.state } : { state: undefined }),
+        ...(Object.hasOwn(decoded, 'intent') ? { intent: normalizeIntentValue(decoded.intent) } : {}),
       };
     } catch {
       throw new Error('invalid encrypted fragment or password');
@@ -98,6 +101,56 @@ export function createFragmentDecoder(runtime = globalThis) {
         throw new Error(`launch state is too large; maximum is ${maxStateBytes} bytes`);
       }
     }
+    if (Object.hasOwn(value, 'intent')) normalizeIntentValue(value.intent);
+  }
+
+  function normalizeIntentValue(value) {
+    if (!isPlainObjectValue(value)) throw new Error('launch intent must be an object');
+    const archetype = validateIntentSlug(value.archetype, 'archetype');
+    const convention = value.convention;
+    if (
+      typeof convention !== 'string'
+      || convention.length > 256
+      || !/^napplet:[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*(?:\?[A-Za-z0-9._~!$&'()*+,;=:@%/?-]*)?$/.test(convention)
+    ) throw new Error('launch intent convention must be a bounded napplet convention');
+    const intent = { archetype, convention };
+    if (Object.hasOwn(value, 'action')) intent.action = validateIntentSlug(value.action, 'action');
+    if (Object.hasOwn(value, 'payload')) intent.payload = cloneJsonValue(value.payload, 'intent payload');
+    if (Object.hasOwn(value, 'behavior')) intent.behavior = normalizeIntentBehavior(value.behavior);
+    const serialized = stringifyJsonValue(intent);
+    if (new runtime.TextEncoder().encode(serialized).byteLength > maxStateBytes) {
+      throw new Error(`launch intent is too large; maximum is ${maxStateBytes} bytes`);
+    }
+    return intent;
+  }
+
+  function validateIntentSlug(value, field) {
+    if (typeof value !== 'string' || value.length > 64 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) {
+      throw new Error(`launch intent ${field} must be a lowercase slug`);
+    }
+    return value;
+  }
+
+  function normalizeIntentBehavior(value) {
+    if (!isPlainObjectValue(value)) throw new Error('launch intent behavior must be an object');
+    const behavior = {};
+    for (const field of ['focus', 'newWindow', 'reuse']) {
+      if (!Object.hasOwn(value, field)) continue;
+      if (typeof value[field] !== 'boolean') throw new Error(`launch intent behavior ${field} must be boolean`);
+      behavior[field] = value[field];
+    }
+    if (Object.keys(value).some((field) => !['focus', 'newWindow', 'reuse'].includes(field))) {
+      throw new Error('launch intent behavior contains an unsupported field');
+    }
+    return behavior;
+  }
+
+  function cloneJsonValue(value, label) {
+    const serialized = stringifyJsonValue(value);
+    if (new runtime.TextEncoder().encode(serialized).byteLength > maxStateBytes) {
+      throw new Error(`${label} is too large; maximum is ${maxStateBytes} bytes`);
+    }
+    return JSON.parse(serialized);
   }
 
   function validatePointer(pointer) {
@@ -173,12 +226,12 @@ const fragmentDecoder = createFragmentDecoder();
 /**
  * Encode a NIP-19 napplet pointer and JSON-compatible launch state.
  *
- * @param {{pointer: string, state?: unknown}} input
+ * @param {{pointer: string, state?: unknown, intent?: LaunchIntent}} input
  * @returns {string} A hash beginning with `#nw1.`.
  */
-export function encodeFragment({ pointer, state } = {}) {
+export function encodeFragment({ pointer, state, intent } = {}) {
   assertPointer(pointer);
-  const encoded = toBase64Url(JSON.stringify(createPayload(pointer, state)));
+  const encoded = toBase64Url(JSON.stringify(createPayload(pointer, state, intent)));
   const fragment = `#${FRAGMENT_PREFIX}${encoded}`;
   if (fragment.length > MAX_FRAGMENT_LENGTH) {
     throw new Error(`fragment is too large; maximum is ${MAX_FRAGMENT_LENGTH} characters`);
@@ -190,13 +243,13 @@ export function encodeFragment({ pointer, state } = {}) {
  * Encode a password-protected launch envelope. The password is not included
  * in the link; it must be shared out of band.
  *
- * @param {{pointer: string, state?: unknown}} input
+ * @param {{pointer: string, state?: unknown, intent?: LaunchIntent}} input
  * @param {string} password
  * @returns {Promise<string>}
  */
-export async function encodeEncryptedFragment({ pointer, state } = {}, password) {
+export async function encodeEncryptedFragment({ pointer, state, intent } = {}, password) {
   assertPassword(password);
-  const payload = new TextEncoder().encode(JSON.stringify(createPayload(pointer, state)));
+  const payload = new TextEncoder().encode(JSON.stringify(createPayload(pointer, state, intent)));
   const webCrypto = getWebCrypto();
   const salt = new Uint8Array(16);
   const iv = new Uint8Array(12);
@@ -255,6 +308,9 @@ export function validateLaunchRequest(value) {
     }
     request.state = JSON.parse(stateJson);
   }
+  if (Object.hasOwn(value, 'intent') && value.intent !== undefined) {
+    request.intent = normalizeIntent(value.intent);
+  }
   return request;
 }
 
@@ -271,7 +327,7 @@ function assertPayload(value) {
   }
 }
 
-function createPayload(pointer, state) {
+function createPayload(pointer, state, intent) {
   assertPointer(pointer);
   const payload = { v: 1, pointer };
   if (state !== undefined) {
@@ -281,7 +337,56 @@ function createPayload(pointer, state) {
     }
     payload.state = JSON.parse(stateJson);
   }
+  if (intent !== undefined) payload.intent = normalizeIntent(intent);
   return payload;
+}
+
+function normalizeIntent(value) {
+  if (!isPlainObject(value)) throw new Error('launch intent must be an object');
+  const archetype = assertIntentSlug(value.archetype, 'archetype');
+  const convention = value.convention;
+  if (
+    typeof convention !== 'string'
+    || convention.length > 256
+    || !/^napplet:[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*(?:\?[A-Za-z0-9._~!$&'()*+,;=:@%/?-]*)?$/.test(convention)
+  ) throw new Error('launch intent convention must be a bounded napplet convention');
+  const intent = { archetype, convention };
+  if (Object.hasOwn(value, 'action')) intent.action = assertIntentSlug(value.action, 'action');
+  if (Object.hasOwn(value, 'payload')) intent.payload = cloneJson(value.payload, 'intent payload');
+  if (Object.hasOwn(value, 'behavior')) intent.behavior = normalizeIntentBehavior(value.behavior);
+  if (byteLength(stringifyJson(intent)) > MAX_STATE_BYTES) {
+    throw new Error(`launch intent is too large; maximum is ${MAX_STATE_BYTES} bytes`);
+  }
+  return intent;
+}
+
+function assertIntentSlug(value, field) {
+  if (typeof value !== 'string' || value.length > 64 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) {
+    throw new Error(`launch intent ${field} must be a lowercase slug`);
+  }
+  return value;
+}
+
+function normalizeIntentBehavior(value) {
+  if (!isPlainObject(value)) throw new Error('launch intent behavior must be an object');
+  const behavior = {};
+  for (const field of ['focus', 'newWindow', 'reuse']) {
+    if (!Object.hasOwn(value, field)) continue;
+    if (typeof value[field] !== 'boolean') throw new Error(`launch intent behavior ${field} must be boolean`);
+    behavior[field] = value[field];
+  }
+  if (Object.keys(value).some((field) => !['focus', 'newWindow', 'reuse'].includes(field))) {
+    throw new Error('launch intent behavior contains an unsupported field');
+  }
+  return behavior;
+}
+
+function cloneJson(value, label) {
+  const serialized = stringifyJson(value);
+  if (byteLength(serialized) > MAX_STATE_BYTES) {
+    throw new Error(`${label} is too large; maximum is ${MAX_STATE_BYTES} bytes`);
+  }
+  return JSON.parse(serialized);
 }
 
 function assertPassword(password) {

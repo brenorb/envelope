@@ -1,6 +1,197 @@
 import { createFragmentDecoder } from './fragment.js';
 
 /**
+ * Install the opener's fragment-to-intent state machine.
+ *
+ * This function is deliberately closure-free so its source can be embedded in
+ * the signed opener artifact. The host learns only the target pointer; launch
+ * state stays in this napplet and crosses into the target through NAP-INTENT.
+ *
+ * @param {typeof globalThis} runtime
+ * @param {{decodeFragment: Function, isEncryptedFragment: Function, decodeEncryptedFragment: Function}} codec
+ */
+export function createOpenerNappletController(runtime, codec) {
+  const parentWindow = runtime.parent;
+  const status = runtime.document.querySelector('#status');
+  const unlock = runtime.document.querySelector('#unlock');
+  const password = runtime.document.querySelector('#password');
+  let shellReady = false;
+  let fragment;
+  let decoding = false;
+  let started = false;
+  let requestSequence = 0;
+  let pendingLaunch = null;
+
+  const setStatus = (message, state) => {
+    status.textContent = message;
+    if (state) status.dataset.state = state;
+    else delete status.dataset.state;
+  };
+
+  const reportError = (error, encrypted = false) => {
+    const message = encrypted
+      ? 'This encrypted link could not open. Check the password and try again.'
+      : 'This link could not open safely.';
+    setStatus(message, 'error');
+    parentWindow.postMessage({
+      type: 'opener.error',
+      version: 1,
+      error: error instanceof Error ? error.message : String(error),
+    }, '*');
+  };
+
+  const launch = (request) => {
+    pendingLaunch = null;
+    if (request === null) {
+      setStatus('Choose a napplet to open.', 'empty');
+      return;
+    }
+
+    const requestId = `launch-${++requestSequence}`;
+    pendingLaunch = { requestId, request };
+    parentWindow.postMessage({
+      type: 'opener.open',
+      version: 1,
+      requestId,
+      pointer: request.pointer,
+    }, '*');
+    setStatus('Verifying napplet…', 'loading');
+  };
+
+  const decodePublic = () => {
+    try {
+      launch(codec.decodeFragment(fragment));
+    } catch (error) {
+      reportError(error);
+    }
+  };
+
+  const consume = () => {
+    if (!shellReady || fragment === undefined || decoding) return;
+    pendingLaunch = null;
+    unlock.hidden = true;
+    if (codec.isEncryptedFragment(fragment)) {
+      setStatus('Enter the password to decrypt this link.', 'locked');
+      unlock.hidden = false;
+      password.focus();
+      return;
+    }
+    decodePublic();
+  };
+
+  const normalizeContracts = (contracts) => {
+    if (!Array.isArray(contracts)) return [];
+    return contracts.filter((contract) => (
+      contract !== null
+      && typeof contract === 'object'
+      && typeof contract.archetype === 'string'
+      && contract.archetype.length > 0
+      && typeof contract.convention === 'string'
+      && contract.convention.length > 0
+    ));
+  };
+
+  const createIntentRequest = (request, contracts) => {
+    const advertised = normalizeContracts(contracts);
+    const requested = request.intent;
+    const contract = requested
+      ? advertised.find((candidate) => (
+          candidate.archetype === requested.archetype
+          && candidate.convention === requested.convention
+        ))
+      : advertised[0];
+
+    if (!contract) throw new Error('the target does not advertise the requested intent contract');
+
+    const intent = {
+      archetype: contract.archetype,
+      action: requested?.action ?? 'open',
+      convention: contract.convention,
+    };
+    if (requested && Object.hasOwn(requested, 'payload')) intent.payload = requested.payload;
+    else if (request.state !== undefined) intent.payload = request.state;
+    if (requested?.behavior !== undefined) intent.behavior = requested.behavior;
+    return intent;
+  };
+
+  const invokeTarget = async (message) => {
+    const pending = pendingLaunch;
+    if (
+      !pending
+      || message.requestId !== pending.requestId
+      || message.pointer !== pending.request.pointer
+    ) return;
+
+    pendingLaunch = null;
+    try {
+      const intentApi = runtime.napplet?.intent;
+      if (typeof intentApi?.invoke !== 'function') throw new Error('the Paja runtime did not grant NAP-INTENT');
+      const result = await intentApi.invoke(createIntentRequest(pending.request, message.contracts));
+      if (!result || result.ok !== true || result.handled !== true) {
+        throw new Error(result?.error ?? 'the target did not handle the launch intent');
+      }
+      setStatus('Napplet opened.', 'ready');
+    } catch (error) {
+      reportError(error);
+    }
+  };
+
+  const onSubmit = async (event) => {
+    event.preventDefault();
+    if (decoding || !codec.isEncryptedFragment(fragment)) return;
+    decoding = true;
+    setStatus('Decrypting link…', 'loading');
+    try {
+      launch(await codec.decodeEncryptedFragment(fragment, password.value));
+      unlock.hidden = true;
+    } catch (error) {
+      reportError(error, true);
+      unlock.hidden = false;
+      password.select();
+    } finally {
+      decoding = false;
+    }
+  };
+
+  const onMessage = (event) => {
+    if (event.source !== parentWindow) return;
+    const data = event.data;
+    if (!data || typeof data.type !== 'string') return;
+    if (data.type === 'shell.init') {
+      shellReady = true;
+      consume();
+      return;
+    }
+    if (data.type === 'opener.fragment' && typeof data.fragment === 'string') {
+      fragment = data.fragment;
+      consume();
+      return;
+    }
+    if (data.type === 'opener.target.ready' && data.version === 1) {
+      void invokeTarget(data);
+      return;
+    }
+    if (
+      data.type === 'opener.target.error'
+      && pendingLaunch
+      && data.requestId === pendingLaunch.requestId
+    ) {
+      pendingLaunch = null;
+      reportError(new Error(typeof data.message === 'string' ? data.message : 'target failed to open'));
+    }
+  };
+
+  function start() {
+    if (started) return;
+    started = true;
+    unlock.addEventListener('submit', onSubmit);
+    runtime.addEventListener('message', onMessage);
+  }
+
+  return Object.freeze({ start });
+}
+
+/**
  * Self-contained opener napplet artifact.
  *
  * The runtime may transport the top-level fragment into this opaque iframe,
@@ -40,98 +231,8 @@ export const DEFAULT_OPENER_HTML = `<!doctype html>
     <script>
       (() => {
         const codec = (${createFragmentDecoder.toString()})(globalThis);
-        const parentWindow = window.parent;
-        const status = document.querySelector('#status');
-        const unlock = document.querySelector('#unlock');
-        const password = document.querySelector('#password');
-        let shellReady = false;
-        let fragment;
-        let decoding = false;
-
-        const setStatus = (message, state) => {
-          status.textContent = message;
-          if (state) status.dataset.state = state;
-          else delete status.dataset.state;
-        };
-
-        const reportError = (error, encrypted = false) => {
-          const message = encrypted
-            ? 'This encrypted link could not open. Check the password and try again.'
-            : 'This link is not a valid Hosted Nowhere launch link.';
-          setStatus(message, 'error');
-          parentWindow.postMessage({
-            type: 'opener.error',
-            version: 1,
-            error: error instanceof Error ? error.message : String(error)
-          }, '*');
-        };
-
-        const launch = (request) => {
-          if (request === null) {
-            setStatus('Choose a napplet to open.', 'empty');
-            return;
-          }
-          parentWindow.postMessage({
-            type: 'opener.open',
-            version: 1,
-            pointer: request.pointer,
-            ...(request.state === undefined ? {} : { state: request.state })
-          }, '*');
-          setStatus('Opening napplet…', 'loading');
-        };
-
-        const decodePublic = () => {
-          try {
-            launch(codec.decodeFragment(fragment));
-          } catch (error) {
-            reportError(error);
-          }
-        };
-
-        const consume = () => {
-          if (!shellReady || fragment === undefined || decoding) return;
-          unlock.hidden = true;
-          if (codec.isEncryptedFragment(fragment)) {
-            setStatus('Enter the password to decrypt this link.', 'locked');
-            unlock.hidden = false;
-            password.focus();
-            return;
-          }
-          decodePublic();
-        };
-
-        unlock.addEventListener('submit', async (event) => {
-          event.preventDefault();
-          if (decoding || !codec.isEncryptedFragment(fragment)) return;
-          decoding = true;
-          setStatus('Decrypting link…', 'loading');
-          try {
-            launch(await codec.decodeEncryptedFragment(fragment, password.value));
-            unlock.hidden = true;
-          } catch (error) {
-            reportError(error, true);
-            unlock.hidden = false;
-            password.select();
-          } finally {
-            decoding = false;
-          }
-        });
-
-        window.addEventListener('message', (event) => {
-          if (event.source !== parentWindow) return;
-          const data = event.data;
-          if (!data || typeof data.type !== 'string') return;
-          if (data.type === 'shell.init') {
-            shellReady = true;
-            consume();
-            return;
-          }
-          if (data.type !== 'opener.fragment' || typeof data.fragment !== 'string') return;
-          fragment = data.fragment;
-          consume();
-        });
-
-        parentWindow.postMessage({ type: 'shell.ready' }, '*');
+        const controller = (${createOpenerNappletController.toString()})(globalThis, codec);
+        controller.start();
       })();
     </script>
   </body>

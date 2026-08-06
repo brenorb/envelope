@@ -21,6 +21,25 @@ test('round trips a pointer and JSON state through the URL fragment', () => {
   });
 });
 
+test('round trips an explicit NAP-INTENT contract and opaque payload', () => {
+  const intent = {
+    archetype: 'cashu-wallet',
+    action: 'open',
+    convention: 'napplet:cashu-wallet/open',
+    payload: { mint: 'https://mint.example', amount: 21 },
+    behavior: { focus: true, reuse: true },
+  };
+
+  const fragment = encodeFragment({ pointer, intent });
+
+  assert.deepEqual(decodeFragment(fragment), {
+    version: 1,
+    pointer,
+    state: undefined,
+    intent,
+  });
+});
+
 test('accepts a raw hash value as well as a full URL fragment', () => {
   const fragment = encodeFragment({ pointer });
 
@@ -46,6 +65,28 @@ test('rejects non-NIP-19 pointers and oversized fragments', () => {
   assert.throws(() => encodeFragment({ pointer: 'https://example.com/app' }), /naddr or nevent/i);
   assert.throws(() => encodeFragment({ pointer: 'naddr1ac', state: 'x'.repeat(10_000) }), /large/i);
   assert.ok(MAX_FRAGMENT_LENGTH < 10_000);
+});
+
+test('rejects malformed intent routing before encoding', () => {
+  assert.throws(
+    () => encodeFragment({ pointer, intent: { archetype: '', convention: 'napplet:note/open' } }),
+    /intent archetype/i,
+  );
+  assert.throws(
+    () => encodeFragment({ pointer, intent: { archetype: 'note', convention: 'javascript:alert(1)' } }),
+    /intent convention/i,
+  );
+  assert.throws(
+    () => encodeFragment({
+      pointer,
+      intent: {
+        archetype: 'note',
+        convention: 'napplet:note/open',
+        behavior: { focus: 'yes' },
+      },
+    }),
+    /intent behavior/i,
+  );
 });
 
 test('does not execute values that look like JSON or JavaScript', () => {

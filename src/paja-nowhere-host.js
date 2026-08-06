@@ -75,9 +75,10 @@ function isOpenRequest(value) {
   );
 }
 
-async function openTarget(paja, openerTab, request) {
+async function openTarget(paja, openerTab, request, isCurrent) {
   await paja.loadPointer(request.pointer);
   const targetTab = await waitFor(() => findReadyTab(paja, request.pointer));
+  if (!isCurrent()) return;
 
   openerTab.frame.contentWindow.postMessage(
     {
@@ -85,10 +86,10 @@ async function openTarget(paja, openerTab, request) {
       version: 1,
       requestId: request.requestId,
       pointer: request.pointer,
-      target: {
-        dTag: targetTab.resolvedTarget?.dTag,
-        aggregateHash: targetTab.resolvedTarget?.aggregateHash,
-      },
+      contracts: (targetTab.resolvedTarget?.manifest?.archetypes ?? []).map((contract) => ({
+        archetype: contract.slug,
+        convention: contract.convention,
+      })),
     },
     '*',
   );
@@ -101,14 +102,16 @@ export async function installNowhereHost() {
   let requestGeneration = 0;
 
   postFragment(openerTab);
-  window.addEventListener('hashchange', () => postFragment(openerTab));
+  // A reload resets Paja's in-memory installed catalog. That guarantees the
+  // fragment-selected napplet is the only candidate for its intent contract.
+  window.addEventListener('hashchange', () => window.location.reload());
   window.addEventListener('message', (event) => {
     if (event.source !== openerTab.frame.contentWindow || !isOpenRequest(event.data)) {
       return;
     }
 
     const generation = ++requestGeneration;
-    void openTarget(paja, openerTab, event.data).catch((error) => {
+    void openTarget(paja, openerTab, event.data, () => generation === requestGeneration).catch((error) => {
       if (generation !== requestGeneration) return;
 
       openerTab.frame.contentWindow.postMessage(
