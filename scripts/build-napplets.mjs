@@ -9,7 +9,7 @@ import { EXAMPLE_TARGET_HTML } from '../src/example-target-napplet.js';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const DEFAULT_BLOSSOM_SERVERS = Object.freeze([
   'https://blossom.primal.net',
-  'https://blossom.nostr.build',
+  'https://cdn.hzrd149.com',
 ]);
 
 export function createNappletRelease({ html, dTag, title, description, requires = [], archetypes = [], servers = DEFAULT_BLOSSOM_SERVERS }) {
