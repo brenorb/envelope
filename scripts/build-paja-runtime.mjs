@@ -42,6 +42,52 @@ function addNowhereHost(html) {
   );
 }
 
+function addOfflinePointerEventCache(source) {
+  const functionMarker = 'async function resolvePajaPointer(value, options = {}) {';
+  const onlineResolution = '    const event = await resolvePointerEvent(pointer, pool, relays, normalizeMaxWaitMs(options.maxWaitMs));';
+  const verifiedReturn = `    return {
+      pointer,
+      event,
+      relays,`;
+  if (!source.includes(functionMarker) || !source.includes(onlineResolution) || !source.includes(verifiedReturn)) {
+    throw new Error('The installed Paja resolver no longer matches the offline cache adaptation');
+  }
+
+  const helpers = `var NOWHERE_POINTER_EVENT_CACHE_PREFIX = "nowhere:paja:pointer-events:v1:";
+function readNowherePointerEvent(pointer) {
+  try {
+    const event = JSON.parse(localStorage.getItem(NOWHERE_POINTER_EVENT_CACHE_PREFIX + pointer.value) ?? "null");
+    return event && matchesPointer(pointer, event) && isNappletManifestKind(event.kind) ? event : null;
+  } catch {
+    return null;
+  }
+}
+function writeNowherePointerEvent(pointer, event) {
+  try {
+    localStorage.setItem(NOWHERE_POINTER_EVENT_CACHE_PREFIX + pointer.value, JSON.stringify(event));
+  } catch {
+  }
+}
+`;
+  const cachedResolution = `    const cachedEvent = readNowherePointerEvent(pointer);
+    let event;
+    if (typeof navigator !== "undefined" && navigator.onLine === false && cachedEvent) {
+      event = cachedEvent;
+    } else {
+      try {
+        event = await resolvePointerEvent(pointer, pool, relays, normalizeMaxWaitMs(options.maxWaitMs));
+      } catch (error) {
+        if (!cachedEvent) throw error;
+        event = cachedEvent;
+      }
+    }`;
+
+  return source
+    .replace(functionMarker, `${helpers}${functionMarker}`)
+    .replace(onlineResolution, cachedResolution)
+    .replace(verifiedReturn, `    writeNowherePointerEvent(pointer, event);\n${verifiedReturn}`);
+}
+
 async function prepareOutputDirectory(outputDir) {
   const resolvedOutput = resolve(outputDir);
   if (resolvedOutput === '/' || resolvedOutput === projectRoot) {
@@ -67,11 +113,12 @@ export async function buildPajaRuntime({
   const config = createPajaRuntimeHostConfig({ pointer: openerPointer }, builtAt);
   const html = addNowhereHost(renderPajaHtml(config));
   const configJson = `${JSON.stringify(config, null, 2)}\n`;
+  const browserHost = addOfflinePointerEventCache(await readFile(browserHostPath, 'utf8'));
 
   await Promise.all([
     writeFile(resolve(resolvedOutput, 'index.html'), html, 'utf8'),
     writeFile(resolve(resolvedOutput, '__kehto/config.json'), configJson, 'utf8'),
-    copyFile(browserHostPath, resolve(resolvedOutput, '__kehto/browser-host.js')),
+    writeFile(resolve(resolvedOutput, '__kehto/browser-host.js'), browserHost, 'utf8'),
     copyFile(nowhereHostPath, resolve(resolvedOutput, '__kehto/nowhere-host.js')),
     copyFile(serviceWorkerPath, resolve(resolvedOutput, 'sw.js')),
   ]);

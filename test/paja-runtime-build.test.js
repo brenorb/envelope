@@ -37,6 +37,9 @@ test('builds the real static Paja runtime with the opener pinned as its boot tar
   assert.ok((await stat(join(outputDir, '__kehto/browser-host.js'))).size > 100_000);
   assert.match(pajaHost, /intent\.invoke/);
   assert.match(pajaHost, /resolvePajaPointer/);
+  assert.match(pajaHost, /nowhere:paja:pointer-events:v1/);
+  assert.match(pajaHost, /navigator\.onLine/);
+  assert.match(pajaHost, /resolveNapplet/);
   assert.match(nowhereHost, /window\.location\.hash/);
   assert.match(nowhereHost, /opener\.fragment/);
   assert.doesNotMatch(nowhereHost, /decodeFragment|decodeEncryptedFragment/);
