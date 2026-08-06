@@ -21,6 +21,7 @@ test('builds the real static Paja runtime with the opener pinned as its boot tar
   const config = JSON.parse(await readFile(join(outputDir, '__kehto/config.json'), 'utf8'));
   const pajaHost = await readFile(join(outputDir, '__kehto/browser-host.js'), 'utf8');
   const nowhereHost = await readFile(join(outputDir, '__kehto/nowhere-host.js'), 'utf8');
+  const serviceWorker = await readFile(join(outputDir, 'sw.js'), 'utf8');
 
   assert.deepEqual(result, {
     outputDir,
@@ -32,12 +33,16 @@ test('builds the real static Paja runtime with the opener pinned as its boot tar
   assert.match(indexHtml, /id="kehto-paja-config"/);
   assert.match(indexHtml, /\.\/__kehto\/browser-host\.js/);
   assert.match(indexHtml, /\.\/__kehto\/nowhere-host\.js/);
+  assert.match(indexHtml, /navigator\.serviceWorker\.register\('\.\/sw\.js'\)/);
   assert.ok((await stat(join(outputDir, '__kehto/browser-host.js'))).size > 100_000);
   assert.match(pajaHost, /intent\.invoke/);
   assert.match(pajaHost, /resolvePajaPointer/);
   assert.match(nowhereHost, /window\.location\.hash/);
   assert.match(nowhereHost, /opener\.fragment/);
   assert.doesNotMatch(nowhereHost, /decodeFragment|decodeEncryptedFragment/);
+  assert.match(serviceWorker, /__kehto\/browser-host\.js/);
+  assert.match(serviceWorker, /__kehto\/config\.json/);
+  assert.match(serviceWorker, /__kehto\/nowhere-host\.js/);
 });
 
 test('refuses to build a runtime without a NIP-19 opener pointer', async () => {

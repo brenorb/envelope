@@ -6,6 +6,7 @@ import { nip19 } from 'nostr-tools';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const defaultNowhereHostPath = resolve(projectRoot, 'src/paja-nowhere-host.js');
+const defaultServiceWorkerPath = resolve(projectRoot, 'public/sw.js');
 
 function validateOpenerPointer(pointer) {
   if (typeof pointer !== 'string') {
@@ -37,7 +38,7 @@ function addNowhereHost(html) {
 
   return html.replace(
     marker,
-    `${marker}\n    <script type="module" src="./__kehto/nowhere-host.js"></script>`,
+    `${marker}\n    <script type="module" src="./__kehto/nowhere-host.js"></script>\n    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>`,
   );
 }
 
@@ -58,6 +59,7 @@ export async function buildPajaRuntime({
   builtAt = new Date(),
   browserHostPath = pajaBrowserHostPath(),
   nowhereHostPath = defaultNowhereHostPath,
+  serviceWorkerPath = defaultServiceWorkerPath,
 } = {}) {
   validateOpenerPointer(openerPointer);
 
@@ -71,6 +73,7 @@ export async function buildPajaRuntime({
     writeFile(resolve(resolvedOutput, '__kehto/config.json'), configJson, 'utf8'),
     copyFile(browserHostPath, resolve(resolvedOutput, '__kehto/browser-host.js')),
     copyFile(nowhereHostPath, resolve(resolvedOutput, '__kehto/nowhere-host.js')),
+    copyFile(serviceWorkerPath, resolve(resolvedOutput, 'sw.js')),
   ]);
 
   return {
