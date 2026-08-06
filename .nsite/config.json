@@ -1,0 +1,20 @@
+{
+  "relays": [
+    "wss://relay.nsite.lol",
+    "wss://relay.damus.io",
+    "wss://nos.lol",
+    "wss://relay.primal.net",
+    "wss://nostr.mom",
+    "wss://relay.mostr.pub"
+  ],
+  "servers": [
+    "https://blossom.primal.net",
+    "https://cdn.hzrd149.com"
+  ],
+  "id": "nowhere",
+  "title": "Hosted Nowhere",
+  "description": "A Paja runtime that opens Nostr napplets and their state directly from a URL fragment.",
+  "gatewayHostnames": [
+    "nsite.lol"
+  ]
+}
