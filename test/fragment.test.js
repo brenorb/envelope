@@ -77,6 +77,10 @@ test('rejects malformed intent routing before encoding', () => {
     /intent convention/i,
   );
   assert.throws(
+    () => encodeFragment({ pointer, intent: { archetype: 'note', convention: 'napplet:note/open?mode=compact' } }),
+    /intent convention/i,
+  );
+  assert.throws(
     () => encodeFragment({
       pointer,
       intent: {

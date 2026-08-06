@@ -111,7 +111,7 @@ export function createFragmentDecoder(runtime = globalThis) {
     if (
       typeof convention !== 'string'
       || convention.length > 256
-      || !/^napplet:[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*(?:\?[A-Za-z0-9._~!$&'()*+,;=:@%/?-]*)?$/.test(convention)
+      || !/^napplet:[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/.test(convention)
     ) throw new Error('launch intent convention must be a bounded napplet convention');
     const intent = { archetype, convention };
     if (Object.hasOwn(value, 'action')) intent.action = validateIntentSlug(value.action, 'action');
@@ -348,7 +348,7 @@ function normalizeIntent(value) {
   if (
     typeof convention !== 'string'
     || convention.length > 256
-    || !/^napplet:[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*(?:\?[A-Za-z0-9._~!$&'()*+,;=:@%/?-]*)?$/.test(convention)
+    || !/^napplet:[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/.test(convention)
   ) throw new Error('launch intent convention must be a bounded napplet convention');
   const intent = { archetype, convention };
   if (Object.hasOwn(value, 'action')) intent.action = assertIntentSlug(value.action, 'action');

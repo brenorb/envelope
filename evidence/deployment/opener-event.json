@@ -1,12 +1,12 @@
 {
   "kind": 35129,
-  "id": "736353a870a50432fb2b14cb227f8127decda6e90a1bf6e60a44f6496cee7423",
+  "id": "84ffd1ac3b5b62293c4d072fe6480eb24b56ff9aec8c28f92132d65234c3250b",
   "pubkey": "42d617d410c079de294a7dc3d66685699729543c595ef419d125252cfb88b0b0",
-  "created_at": 1785974887,
+  "created_at": 1785977353,
   "tags": [
     ["d", "hosted-nowhere-opener"],
-    ["path", "/index.html", "c72baa7b53dd7730caca3158466766c4292e41e2d1adfaedad1b77441924a9a2"],
-    ["x", "c4c4b4252cd373eeb4a7704d7c5595b18a3684e9c067a143587db9f583e2fd68", "aggregate"],
+    ["path", "/index.html", "540e15f417c274fefbffa724645e838f5d21e57c380c2925b9ff79bf2e263559"],
+    ["x", "a543ad8ccb2bfeae006f0b73dbe20e3b12692bc6a3c0caaaef22897dd71cf58e", "aggregate"],
     ["server", "https://blossom.primal.net"],
     ["server", "https://cdn.hzrd149.com"],
     ["requires", "intent"],
@@ -14,5 +14,5 @@
     ["description", "Decodes Hosted Nowhere fragments and dispatches verified NAP-INTENT launches."]
   ],
   "content": "{}",
-  "sig": "47fb659d478b91c79d950f616006ef26068ae3e53d47e342e311db28a66008c5ac599b295d18817eba02f31a5fa705ccdf019752f8f306f8616fbf91a911ef5c"
+  "sig": "4a24cf1401dcd9ed884908c92374c94341224934ba1aec15ffba395a4218b70bf14623626ae61d7b967f87de94af7e428eb6a885d03f5fc3e8d0308e8ed3abd4"
 }
