@@ -131,7 +131,8 @@ export async function buildPajaRuntime({
 }
 
 async function runCli() {
-  const openerPointer = process.env.NOWHERE_OPENER_POINTER;
+  const deployment = JSON.parse(await readFile(resolve(projectRoot, 'config/deployment.json'), 'utf8'));
+  const openerPointer = process.env.NOWHERE_OPENER_POINTER ?? deployment.openerPointer;
   const outputDir = process.env.NOWHERE_OUTPUT_DIR ?? resolve(projectRoot, 'dist');
   const result = await buildPajaRuntime({ outputDir, openerPointer });
   process.stdout.write(`Built Paja runtime in ${result.outputDir}\n`);
