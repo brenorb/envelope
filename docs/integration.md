@@ -11,7 +11,7 @@ dist/
 └── __kehto/
     ├── browser-host.js
     ├── config.json
-    └── nowhere-host.js
+    └── envelope-host.js
 ```
 
 The build uses `createPajaRuntimeHostConfig()` and `renderPajaHtml()` from the
@@ -20,7 +20,7 @@ installed `@kehto/paja` package. `config.json` pins the opener `naddr` from
 runtime with one reviewed adaptation: it retains already verified signed
 pointer events so Paja's existing blob cache can resolve them offline.
 
-`nowhere-host.js` does only coordination:
+`envelope-host.js` does only coordination:
 
 - forward the untouched top-level fragment to the authenticated opener frame;
 - accept a pointer-only `opener.open` request from that frame;
@@ -45,16 +45,16 @@ nsyte validate
 
 `npm run build:napplets` creates two single-file NIP-5D releases:
 
-- `hosted-nowhere-opener`, requiring the `intent` domain;
-- `hosted-nowhere-example`, requiring `inc` and advertising
-  `hosted-nowhere` / `napplet:hosted-nowhere/open`.
+- `envelope-opener`, requiring the `intent` domain;
+- `envelope-example`, requiring `inc` and advertising
+  `envelope` / `napplet:envelope/open`.
 
 For each artifact, `release.json` records the `/index.html` SHA-256, NIP-5A
 aggregate, and canonical kind-35129 tags. Publish the exact bytes to every
 declared Blossom server, then sign and publish the matching manifest. Do not
 change an artifact after computing its release blueprint.
 
-The current release was mirrored to:
+The previous release was mirrored to:
 
 - `https://blossom.primal.net`
 - `https://cdn.hzrd149.com`
@@ -65,15 +65,12 @@ and event IDs live in `config/deployment.json`.
 
 Exact signed events retrieved from the relays are archived in
 `evidence/deployment/`. `test/deployment-evidence.test.js` verifies every
-signature and pointer coordinate, rebuilds the runtime at the recorded release
-timestamp, and compares every resulting byte hash with the published nsite
-path tags. It performs the same source-to-published-hash check for both
-napplets. `runtimeBuiltAt` is intentionally fixed per deployment so a normal
-`npm run build` reproduces the published nsite bytes.
+historical signature and pointer coordinate. The renamed Envelope artifacts
+need a new publish before their bytes can be added to that evidence.
 
 ## nsite deployment
 
-The nsite uses `.nsite/config.json` and the named identifier `nowhere`:
+The nsite uses `.nsite/config.json` and the named identifier `envelope`:
 
 ```bash
 nsyte deploy dist --prompt-sec --sync

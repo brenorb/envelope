@@ -11,8 +11,8 @@
     "https://cdn.hzrd149.com",
     "https://blossom.primal.net"
   ],
-  "id": "nowhere",
-  "title": "Hosted Nowhere",
+  "id": "envelope",
+  "title": "Envelope",
   "description": "A Paja runtime that opens Nostr napplets and their state directly from a URL fragment.",
   "gatewayHostnames": [
     "nsite.lol"

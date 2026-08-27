@@ -1,4 +1,4 @@
-# Hosted Nowhere: protocol research and architecture
+# Envelope: protocol research and architecture
 
 Research and implementation baseline: 2026-08-06.
 
@@ -18,7 +18,7 @@ part of the compatibility boundary, not incidental dependencies.
 1. **nsite delivery.** NIP-5A/nsyte maps static paths to Blossom hashes in a
    signed kind-15128 root or kind-35128 named-site event.
 2. **Paja runtime.** The nsite files are Paja's browser host, config, and the
-   small Hosted Nowhere coordinator. The config's `runtime-pointer` target is
+   small Envelope coordinator. The config's `runtime-pointer` target is
    the opener napplet.
 3. **NIP-5D napplets.** Opener and target are independent signed,
    content-addressed artifacts. Named napplets use kind 35129, distinct from
@@ -34,7 +34,7 @@ manifest.
 browser URL #nw1... or #nwe1...
   -> nsite serves static Paja runtime (fragment never leaves browser)
   -> Paja verifies and starts pinned opener naddr
-  -> Hosted Nowhere adapter sends raw window.location.hash to opener frame
+  -> Envelope adapter sends raw window.location.hash to opener frame
   -> opener parses or decrypts pointer + state/intent
   -> opener sends pointer-only request to authenticated host
   -> Paja resolves signature + aggregate + every target blob hash
@@ -101,7 +101,7 @@ the NAP trust model; a direct custom `postMessage(state)` would bypass it.
 Two independent caches are required:
 
 - the service worker precaches the nsite document, Paja host, config, and
-  Hosted Nowhere adapter;
+  Envelope adapter;
 - Kehto's NIP-5D Cache Storage implementation retains verified blobs and
   recomputes hashes on reuse.
 
@@ -136,7 +136,7 @@ target's own external API calls become offline-capable.
 - nsyte's secret scanner flags Paja's token parsers, Bunker URL parser, and
   generated development signer code. Every flagged region was inspected as a
   false positive before the explicit scanner bypass used for deployment.
-- A named nsite (`nowhere`) avoids replacing the author's existing root nsite.
+- A named nsite (`envelope`) avoids replacing the author's existing root nsite.
 
 ## Security invariants
 

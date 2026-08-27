@@ -23,7 +23,7 @@ export function createKehtoShellHost({ domains = ['shell'] } = {}) {
     },
 
     registerFrame(frame, identity) {
-      const windowId = `hosted-nowhere-${++nextWindowId}`;
+      const windowId = `envelope-${++nextWindowId}`;
       const frameWindow = frame.contentWindow;
       if (!frameWindow) throw new Error('napplet iframe has no contentWindow');
       originRegistry.register(frameWindow, windowId, identity);

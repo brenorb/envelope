@@ -48,20 +48,20 @@ export async function buildNapplets(outputDir = resolve(projectRoot, '.artifacts
     {
       name: 'opener',
       html: DEFAULT_OPENER_HTML,
-      dTag: 'hosted-nowhere-opener',
-      title: 'Hosted Nowhere opener',
-      description: 'Decodes Hosted Nowhere fragments and dispatches verified NAP-INTENT launches.',
+      dTag: 'envelope-opener',
+      title: 'Envelope opener',
+      description: 'Decodes Envelope fragments and dispatches verified NAP-INTENT launches.',
       requires: ['intent'],
       archetypes: [],
     },
     {
       name: 'example-target',
       html: EXAMPLE_TARGET_HTML,
-      dTag: 'hosted-nowhere-example',
-      title: 'Hosted Nowhere example target',
-      description: 'Displays state delivered from a Hosted Nowhere link through NAP-INTENT.',
+      dTag: 'envelope-example',
+      title: 'Envelope example target',
+      description: 'Displays state delivered from an Envelope link through NAP-INTENT.',
       requires: ['inc'],
-      archetypes: [{ slug: 'hosted-nowhere', convention: 'napplet:hosted-nowhere/open' }],
+      archetypes: [{ slug: 'envelope', convention: 'napplet:envelope/open' }],
     },
   ];
 
@@ -78,6 +78,6 @@ export async function buildNapplets(outputDir = resolve(projectRoot, '.artifacts
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const result = await buildNapplets(process.env.NOWHERE_NAPPLET_OUTPUT_DIR);
+  const result = await buildNapplets(process.env.ENVELOPE_NAPPLET_OUTPUT_DIR);
   process.stdout.write(`Built napplet artifacts in ${result.outputDir}\n`);
 }

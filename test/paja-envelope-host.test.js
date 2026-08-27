@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { installNowhereHost } from '../src/paja-nowhere-host.js';
+import { installEnvelopeHost } from '../src/paja-envelope-host.js';
 
 const openerPointer = 'naddr1qqxnzd3h9kummnw3e4kzmr0d3sk6t';
 const targetPointer = 'nevent1qqs0d3h9kummnw3e4kzmr0d3sk6t';
@@ -52,7 +52,7 @@ test('authenticates the opener and exposes only verified target intent contracts
   globalThis.document = fakeDocument;
 
   try {
-    await installNowhereHost();
+    await installEnvelopeHost();
     assert.deepEqual(openerMessages, [{
       type: 'opener.fragment',
       version: 1,

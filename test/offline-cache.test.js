@@ -69,7 +69,7 @@ function createFakeCacheStorage() {
   const storage = {
     cache,
     keyFor(pointerValue) {
-      return `https://hosted-nowhere.invalid/__hosted-nowhere-cache/${encodeURIComponent(pointerValue)}`;
+      return `https://envelope.invalid/__envelope-cache/${encodeURIComponent(pointerValue)}`;
     },
     async open() { return cache; },
   };

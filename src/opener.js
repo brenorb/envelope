@@ -58,7 +58,7 @@ export function createOpener({ window, document, container, status, resolver, bo
       return;
     }
     if (activeRole === 'bootstrap' && data.type === 'opener.error') {
-      showError('This link is not a valid Hosted Nowhere launch link.', data.error);
+      showError('This link is not a valid Envelope launch link.', data.error);
     }
   };
 
@@ -84,7 +84,7 @@ export function createOpener({ window, document, container, status, resolver, bo
     }
     activeFragment = hash;
     mountTarget(
-      { verified: true, indexHtml: bootstrapHtml, title: 'Hosted Nowhere opener' },
+      { verified: true, indexHtml: bootstrapHtml, title: 'Envelope opener' },
       { version: 1, pointer: 'opener' },
       currentGeneration,
       'bootstrap',
@@ -110,7 +110,7 @@ export function createOpener({ window, document, container, status, resolver, bo
     const frame = document.createElement('iframe');
     frame.setAttribute('sandbox', 'allow-scripts');
     frame.sandbox?.add('allow-scripts');
-    frame.setAttribute('title', target.title ?? 'Hosted Nowhere napplet');
+    frame.setAttribute('title', target.title ?? 'Envelope napplet');
     frame.addEventListener('load', () => {
       if (currentGeneration !== generation) return;
       const message = {
@@ -133,7 +133,7 @@ export function createOpener({ window, document, container, status, resolver, bo
     shellInitialized = false;
     replaceChildren(container, frame);
     activeFrameCleanup = shellHost?.registerFrame(frame, target.identity ?? {
-      dTag: 'hosted-nowhere-opener',
+      dTag: 'envelope-opener',
       aggregateHash: '0'.repeat(64),
     });
     frame.srcdoc = shellHost ? shellHost.prepareHtml(target.indexHtml, target) : target.indexHtml;

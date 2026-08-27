@@ -5,7 +5,7 @@ import { createPajaRuntimeHostConfig, renderPajaHtml } from '@kehto/paja';
 import { nip19 } from 'nostr-tools';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const defaultNowhereHostPath = resolve(projectRoot, 'src/paja-nowhere-host.js');
+const defaultEnvelopeHostPath = resolve(projectRoot, 'src/paja-envelope-host.js');
 const defaultServiceWorkerPath = resolve(projectRoot, 'public/sw.js');
 
 function validateOpenerPointer(pointer) {
@@ -30,7 +30,7 @@ function pajaBrowserHostPath() {
   return fileURLToPath(new URL('./browser-host.js', pajaEntryUrl));
 }
 
-function addNowhereHost(html) {
+function addEnvelopeHost(html) {
   const marker = '    <script type="module" src="./__kehto/browser-host.js"></script>';
   if (!html.includes(marker)) {
     throw new Error('The installed Paja HTML no longer exposes its browser host marker');
@@ -38,7 +38,7 @@ function addNowhereHost(html) {
 
   return html.replace(
     marker,
-    `${marker}\n    <script type="module" src="./__kehto/nowhere-host.js"></script>\n    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>`,
+    `${marker}\n    <script type="module" src="./__kehto/envelope-host.js"></script>\n    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>`,
   );
 }
 
@@ -53,23 +53,23 @@ function addOfflinePointerEventCache(source) {
     throw new Error('The installed Paja resolver no longer matches the offline cache adaptation');
   }
 
-  const helpers = `var NOWHERE_POINTER_EVENT_CACHE_PREFIX = "nowhere:paja:pointer-events:v1:";
-function readNowherePointerEvent(pointer) {
+  const helpers = `var ENVELOPE_POINTER_EVENT_CACHE_PREFIX = "envelope:paja:pointer-events:v1:";
+function readEnvelopePointerEvent(pointer) {
   try {
-    const event = JSON.parse(localStorage.getItem(NOWHERE_POINTER_EVENT_CACHE_PREFIX + pointer.value) ?? "null");
+    const event = JSON.parse(localStorage.getItem(ENVELOPE_POINTER_EVENT_CACHE_PREFIX + pointer.value) ?? "null");
     return event && matchesPointer(pointer, event) && isNappletManifestKind(event.kind) ? event : null;
   } catch {
     return null;
   }
 }
-function writeNowherePointerEvent(pointer, event) {
+function writeEnvelopePointerEvent(pointer, event) {
   try {
-    localStorage.setItem(NOWHERE_POINTER_EVENT_CACHE_PREFIX + pointer.value, JSON.stringify(event));
+    localStorage.setItem(ENVELOPE_POINTER_EVENT_CACHE_PREFIX + pointer.value, JSON.stringify(event));
   } catch {
   }
 }
 `;
-  const cachedResolution = `    const cachedEvent = readNowherePointerEvent(pointer);
+  const cachedResolution = `    const cachedEvent = readEnvelopePointerEvent(pointer);
     let event;
     if (typeof navigator !== "undefined" && navigator.onLine === false && cachedEvent) {
       event = cachedEvent;
@@ -85,7 +85,7 @@ function writeNowherePointerEvent(pointer, event) {
   return source
     .replace(functionMarker, `${helpers}${functionMarker}`)
     .replace(onlineResolution, cachedResolution)
-    .replace(verifiedReturn, `    writeNowherePointerEvent(pointer, event);\n${verifiedReturn}`);
+    .replace(verifiedReturn, `    writeEnvelopePointerEvent(pointer, event);\n${verifiedReturn}`);
 }
 
 async function prepareOutputDirectory(outputDir) {
@@ -104,14 +104,14 @@ export async function buildPajaRuntime({
   openerPointer,
   builtAt = new Date(),
   browserHostPath = pajaBrowserHostPath(),
-  nowhereHostPath = defaultNowhereHostPath,
+  envelopeHostPath = defaultEnvelopeHostPath,
   serviceWorkerPath = defaultServiceWorkerPath,
 } = {}) {
   validateOpenerPointer(openerPointer);
 
   const resolvedOutput = await prepareOutputDirectory(outputDir);
   const config = createPajaRuntimeHostConfig({ pointer: openerPointer }, builtAt);
-  const html = addNowhereHost(renderPajaHtml(config));
+  const html = addEnvelopeHost(renderPajaHtml(config));
   const configJson = `${JSON.stringify(config, null, 2)}\n`;
   const browserHost = addOfflinePointerEventCache(await readFile(browserHostPath, 'utf8'));
 
@@ -119,7 +119,7 @@ export async function buildPajaRuntime({
     writeFile(resolve(resolvedOutput, 'index.html'), html, 'utf8'),
     writeFile(resolve(resolvedOutput, '__kehto/config.json'), configJson, 'utf8'),
     writeFile(resolve(resolvedOutput, '__kehto/browser-host.js'), browserHost, 'utf8'),
-    copyFile(nowhereHostPath, resolve(resolvedOutput, '__kehto/nowhere-host.js')),
+    copyFile(envelopeHostPath, resolve(resolvedOutput, '__kehto/envelope-host.js')),
     copyFile(serviceWorkerPath, resolve(resolvedOutput, 'sw.js')),
   ]);
 
@@ -132,8 +132,8 @@ export async function buildPajaRuntime({
 
 async function runCli() {
   const deployment = JSON.parse(await readFile(resolve(projectRoot, 'config/deployment.json'), 'utf8'));
-  const openerPointer = process.env.NOWHERE_OPENER_POINTER ?? deployment.openerPointer;
-  const outputDir = process.env.NOWHERE_OUTPUT_DIR ?? resolve(projectRoot, 'dist');
+  const openerPointer = process.env.ENVELOPE_OPENER_POINTER ?? deployment.openerPointer;
+  const outputDir = process.env.ENVELOPE_OUTPUT_DIR ?? resolve(projectRoot, 'dist');
   const builtAt = new Date(deployment.runtimeBuiltAt);
   if (Number.isNaN(builtAt.valueOf())) {
     throw new Error('config/deployment.json must contain a valid runtimeBuiltAt timestamp');

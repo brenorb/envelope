@@ -6,7 +6,7 @@ import { encodeFragment } from '../src/fragment.js';
 
 const deployment = JSON.parse(await readFile(resolve('config/deployment.json'), 'utf8'));
 const expectedState = {
-  message: 'Hosted Nowhere works',
+  message: 'Envelope works',
   view: 'proof',
   count: 21,
 };
@@ -36,14 +36,14 @@ async function waitForTarget(page) {
     deployment.exampleTargetPointer,
     { timeout: 45_000 },
   );
-  const target = page.frameLocator('iframe[title="Napplet runtime target: Hosted Nowhere example target"]');
+  const target = page.frameLocator('iframe[title="Napplet runtime target: Envelope example target"]');
   await target.locator('#launch-state').waitFor({ timeout: 15_000 });
   await assertExactState(target);
 }
 
 async function assertExactState(target) {
   const rendered = await target.locator('#launch-state').textContent();
-  const retained = await target.locator('body').evaluate(() => globalThis.__HOSTED_NOWHERE_TARGET_STATE__);
+  const retained = await target.locator('body').evaluate(() => globalThis.__ENVELOPE_TARGET_STATE__);
   assert.deepEqual(JSON.parse(rendered), expectedState);
   assert.deepEqual(retained, expectedState);
 }

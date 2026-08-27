@@ -1,5 +1,5 @@
 /**
- * Hosted Nowhere's first share-link format.
+ * Envelope's first share-link format.
  *
  * The fragment is data only. It is never used as HTML, JavaScript, or a URL
  * to navigate to without passing through a resolver-owned boundary.

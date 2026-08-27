@@ -95,7 +95,7 @@ async function openTarget(paja, openerTab, request, isCurrent) {
   );
 }
 
-export async function installNowhereHost() {
+export async function installEnvelopeHost() {
   const openerPointer = openerPointerFrom(readRuntimeConfig());
   const paja = await waitFor(() => window.__KEHTO_PAJA__);
   const openerTab = await waitFor(() => findReadyTab(paja, openerPointer));
@@ -128,7 +128,7 @@ export async function installNowhereHost() {
 }
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  void installNowhereHost().catch((error) => {
-    console.error('Unable to install Hosted Nowhere Paja adapter', error);
+  void installEnvelopeHost().catch((error) => {
+    console.error('Unable to install Envelope Paja adapter', error);
   });
 }

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="A link-shaped launcher for Nostr napplets.">
-    <title>Hosted Nowhere</title>
+    <title>Envelope</title>
     <style>
       :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #111; color: #eee; }
       * { box-sizing: border-box; }
@@ -19,13 +19,13 @@
     </style>
   </head>
   <body>
-    <header><h1>Hosted Nowhere</h1></header>
+    <header><h1>Envelope</h1></header>
     <p id="status" role="status" aria-live="polite">Choose a napplet to open.</p>
     <main id="stage" aria-label="Opened napplet"></main>
     <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch((error) => {
-          console.warn('[hosted-nowhere] offline shell cache unavailable', error);
+          console.warn('[envelope] offline shell cache unavailable', error);
         });
       }
     </script>

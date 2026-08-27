@@ -203,7 +203,7 @@ export const DEFAULT_OPENER_HTML = `<!doctype html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hosted Nowhere opener</title>
+    <title>Envelope opener</title>
     <style>
       :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #111; color: #eee; }
       body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 1.5rem; }
@@ -220,7 +220,7 @@ export const DEFAULT_OPENER_HTML = `<!doctype html>
   </head>
   <body>
     <main>
-      <h1>Hosted Nowhere opener</h1>
+      <h1>Envelope opener</h1>
       <p id="status" role="status" aria-live="polite">Waiting for launch fragment…</p>
       <form id="unlock" hidden>
         <label for="password">Password</label>

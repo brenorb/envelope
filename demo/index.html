@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Envelope QR demo</title>
+    <style>
+      :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #101211; color: #f4f0df; }
+      * { box-sizing: border-box; }
+      body { max-width: 72rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+      header { margin-bottom: 2rem; }
+      h1, h2, p { margin: 0; }
+      h1 { font-size: clamp(1.8rem, 4vw, 3rem); }
+      header p { margin-top: .5rem; color: #a9ad9f; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; }
+      .card { display: grid; gap: 1rem; padding: 1rem; border: 1px solid #30352f; border-radius: .75rem; background: #181b19; }
+      img { width: 100%; max-width: 18rem; aspect-ratio: 1; justify-self: center; padding: .75rem; border-radius: .5rem; background: white; }
+      h2 { font-size: 1.1rem; }
+      .note { margin-top: .35rem; color: #d8c36a; }
+      a { display: inline-block; margin-top: 1rem; color: #9cebb8; }
+      code { display: block; margin-top: .75rem; color: #a9ad9f; font-size: .7rem; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Envelope</h1>
+      <p>Scan a code to open a live Nostr napplet in the custom Paja runtime with state in the URL.</p>
+    </header>
+    <main class="grid" aria-label="Envelope demo launch links">
+      <article class="card" data-demo-id="note-morning">
+        <img src="./qr/note-morning.svg" alt="QR code for Envelope · Morning note">
+        <div>
+          <h2>Envelope · Morning note</h2>
+          <p class="note">Ship the smallest useful thing.</p>
+          <a href="https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2onowhere.nsite.lol/#nw1.eyJ2IjoxLCJwb2ludGVyIjoibmFkZHIxcXZ6cXFxeWY4eXB6cXNra3psMnBwc3JlbWM1NTVsd3I2ZW5nMjZ2aDk5MnJjazI3N3N2YXpmZjk5bmFjM3Y5c3F5Mjh3dW1uOGdoajd1bjlkM3NoanRueXY5a2gydWV3ZDloc3pydGh3ZGVuNXRlMGRlaGh4dG52ZGFrcXo5bmh3ZGVuNXRlMHdmamtjY3RlOWVjOHk2dGR2OWt6dW1uOXdzcXB2NnIwd2Q2eDJlcGRkZWhodzZyOXdmamo2ZXRjdjlraHFtcjk1N21ycXoiLCJzdGF0ZSI6eyJ0ZXh0IjoiU2hpcCB0aGUgc21hbGxlc3QgdXNlZnVsIHRoaW5nLiJ9LCJpbnRlbnQiOnsiYXJjaGV0eXBlIjoiZW52ZWxvcGUiLCJjb252ZW50aW9uIjoibmFwcGxldDplbnZlbG9wZS9vcGVuIiwiYWN0aW9uIjoib3BlbiJ9fQ">Open this napplet</a>
+          <code>https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2onowhere.nsite.lol/#nw1.eyJ2IjoxLCJwb2ludGVyIjoibmFkZHIxcXZ6cXFxeWY4eXB6cXNra3psMnBwc3JlbWM1NTVsd3I2ZW5nMjZ2aDk5MnJjazI3N3N2YXpmZjk5bmFjM3Y5c3F5Mjh3dW1uOGdoajd1bjlkM3NoanRueXY5a2gydWV3ZDloc3pydGh3ZGVuNXRlMGRlaGh4dG52ZGFrcXo5bmh3ZGVuNXRlMHdmamtjY3RlOWVjOHk2dGR2OWt6dW1uOXdzcXB2NnIwd2Q2eDJlcGRkZWhodzZyOXdmamo2ZXRjdjlraHFtcjk1N21ycXoiLCJzdGF0ZSI6eyJ0ZXh0IjoiU2hpcCB0aGUgc21hbGxlc3QgdXNlZnVsIHRoaW5nLiJ9LCJpbnRlbnQiOnsiYXJjaGV0eXBlIjoiZW52ZWxvcGUiLCJjb252ZW50aW9uIjoibmFwcGxldDplbnZlbG9wZS9vcGVuIiwiYWN0aW9uIjoib3BlbiJ9fQ</code>
+        </div>
+      </article>
+      <article class="card" data-demo-id="buildings-ground">
+        <img src="./qr/buildings-ground.svg" alt="QR code for Buildings · Ground floor">
+        <div>
+          <h2>Buildings · Ground floor</h2>
+          <p class="note">Open the ground floor.</p>
+          <a href="https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2onowhere.nsite.lol/#nw1.eyJ2IjoxLCJwb2ludGVyIjoibmFkZHIxcXZ6cXFxeWY4eXB6cXphMGtyOWo3Y3B2czR1dW4wOHdmcG1zeGw4YXFkang5cDhmZzgyNTNjam5haG5kbGt6anFxeWt5YXRmZDNqeGptbjh3dnV5cnR5eiIsInN0YXRlIjp7ImZsb29yIjoiZ3JvdW5kIn0sImludGVudCI6eyJhcmNoZXR5cGUiOiJidWlsZGluZy1leHBsb3JlciIsImNvbnZlbnRpb24iOiJuYXBwbGV0OmJ1aWxkaW5nLWV4cGxvcmVyL29wZW4iLCJhY3Rpb24iOiJvcGVuIn19">Open this napplet</a>
+          <code>https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2onowhere.nsite.lol/#nw1.eyJ2IjoxLCJwb2ludGVyIjoibmFkZHIxcXZ6cXFxeWY4eXB6cXphMGtyOWo3Y3B2czR1dW4wOHdmcG1zeGw4YXFkang5cDhmZzgyNTNjam5haG5kbGt6anFxeWt5YXRmZDNqeGptbjh3dnV5cnR5eiIsInN0YXRlIjp7ImZsb29yIjoiZ3JvdW5kIn0sImludGVudCI6eyJhcmNoZXR5cGUiOiJidWlsZGluZy1leHBsb3JlciIsImNvbnZlbnRpb24iOiJuYXBwbGV0OmJ1aWxkaW5nLWV4cGxvcmVyL29wZW4iLCJhY3Rpb24iOiJvcGVuIn19</code>
+        </div>
+      </article>
+      <article class="card" data-demo-id="buildings-basement">
+        <img src="./qr/buildings-basement.svg" alt="QR code for Buildings · Basement">
+        <div>
+          <h2>Buildings · Basement</h2>
+          <p class="note">Open the basement floor.</p>
+          <a href="https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2onowhere.nsite.lol/#nw1.eyJ2IjoxLCJwb2ludGVyIjoibmFkZHIxcXZ6cXFxeWY4eXB6cXphMGtyOWo3Y3B2czR1dW4wOHdmcG1zeGw4YXFkang5cDhmZzgyNTNjam5haG5kbGt6anFxeWt5YXRmZDNqeGptbjh3dnV5cnR5eiIsInN0YXRlIjp7ImZsb29yIjoiYmFzZW1lbnQifSwiaW50ZW50Ijp7ImFyY2hldHlwZSI6ImJ1aWxkaW5nLWV4cGxvcmVyIiwiY29udmVudGlvbiI6Im5hcHBsZXQ6YnVpbGRpbmctZXhwbG9yZXIvb3BlbiIsImFjdGlvbiI6Im9wZW4ifX0">Open this napplet</a>
+          <code>https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2onowhere.nsite.lol/#nw1.eyJ2IjoxLCJwb2ludGVyIjoibmFkZHIxcXZ6cXFxeWY4eXB6cXphMGtyOWo3Y3B2czR1dW4wOHdmcG1zeGw4YXFkang5cDhmZzgyNTNjam5haG5kbGt6anFxeWt5YXRmZDNqeGptbjh3dnV5cnR5eiIsInN0YXRlIjp7ImZsb29yIjoiYmFzZW1lbnQifSwiaW50ZW50Ijp7ImFyY2hldHlwZSI6ImJ1aWxkaW5nLWV4cGxvcmVyIiwiY29udmVudGlvbiI6Im5hcHBsZXQ6YnVpbGRpbmctZXhwbG9yZXIvb3BlbiIsImFjdGlvbiI6Im9wZW4ifX0</code>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

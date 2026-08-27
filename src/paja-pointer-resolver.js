@@ -62,7 +62,7 @@ export async function resolvePajaPointer(value, options = {}) {
   try {
     const events = await pool.querySync(relays, pointerFilter(pointer), {
       maxWait: normalizeMaxWaitMs(options.maxWaitMs),
-      label: 'hosted-nowhere-paja',
+      label: 'envelope-paja',
     });
     const event = events
       .filter((candidate) => matchesPointer(pointer, candidate))

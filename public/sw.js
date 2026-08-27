@@ -1,11 +1,11 @@
-const SHELL_CACHE = 'hosted-nowhere:shell:v3';
+const SHELL_CACHE = 'envelope:shell:v3';
 const SHELL_ASSETS = [
   './',
   './index.html',
   './sw.js',
   './__kehto/browser-host.js',
   './__kehto/config.json',
-  './__kehto/nowhere-host.js',
+  './__kehto/envelope-host.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -20,7 +20,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const names = await caches.keys();
     await Promise.all(names
-      .filter((name) => name.startsWith('hosted-nowhere:shell:') && name !== SHELL_CACHE)
+      .filter((name) => name.startsWith('envelope:shell:') && name !== SHELL_CACHE)
       .map((name) => caches.delete(name)));
     await self.clients.claim();
   })());

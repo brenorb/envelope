@@ -69,14 +69,14 @@ test('asks the host to install the pointer, then invokes its verified intent con
     version: 1,
     requestId: open.requestId,
     pointer,
-    contracts: [{ archetype: 'hosted-nowhere', convention: 'napplet:hosted-nowhere/open' }],
+    contracts: [{ archetype: 'envelope', convention: 'napplet:envelope/open' }],
   });
   await flush();
 
   assert.deepEqual(harness.invocations, [{
-    archetype: 'hosted-nowhere',
+    archetype: 'envelope',
     action: 'open',
-    convention: 'napplet:hosted-nowhere/open',
+    convention: 'napplet:envelope/open',
     payload: state,
   }]);
   assert.equal(harness.elements['#status'].dataset.state, 'ready');

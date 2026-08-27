@@ -1,6 +1,6 @@
 const CACHE_SCHEMA = 1;
-const DEFAULT_CACHE_NAME = 'hosted-nowhere:verified-targets:v1';
-const DEFAULT_CACHE_ORIGIN = 'https://hosted-nowhere.invalid';
+const DEFAULT_CACHE_NAME = 'envelope:verified-targets:v1';
+const DEFAULT_CACHE_ORIGIN = 'https://envelope.invalid';
 const MAX_CACHED_HTML_BYTES = 10 * 1024 * 1024;
 
 /**
@@ -77,7 +77,7 @@ export function createOfflineFirstResolver({ resolve, cacheStorage = globalThis.
 
   function cacheKey(pointer) {
     if (typeof pointer !== 'string' || pointer.length === 0) throw new Error('pointer must be a non-empty string');
-    return new URL(`/__hosted-nowhere-cache/${encodeURIComponent(pointer)}`, baseUrl).toString();
+    return new URL(`/__envelope-cache/${encodeURIComponent(pointer)}`, baseUrl).toString();
   }
 
   return { resolve: resolveTarget, resolveOffline, prefetch, clear };

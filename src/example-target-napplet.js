@@ -11,8 +11,8 @@ export function createExampleTargetController(runtime) {
       return;
     }
 
-    inc.on('napplet:hosted-nowhere/open', (event) => {
-      runtime.__HOSTED_NOWHERE_TARGET_STATE__ = event.payload;
+    inc.on('napplet:envelope/open', (event) => {
+      runtime.__ENVELOPE_TARGET_STATE__ = event.payload;
       output.textContent = JSON.stringify(event.payload, null, 2);
       status.textContent = 'Opened from the link.';
       status.dataset.state = 'ready';
@@ -27,7 +27,7 @@ export const EXAMPLE_TARGET_HTML = `<!doctype html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hosted Nowhere example target</title>
+    <title>Envelope example target</title>
     <style>
       :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #0d1512; color: #eef8f1; }
       body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 1.5rem; }
@@ -41,7 +41,7 @@ export const EXAMPLE_TARGET_HTML = `<!doctype html>
   </head>
   <body>
     <main>
-      <h1>Hosted Nowhere example target</h1>
+      <h1>Envelope example target</h1>
       <p id="status" role="status">Waiting for a launch intent…</p>
       <pre id="launch-state">No state received.</pre>
     </main>

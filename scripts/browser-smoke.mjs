@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { encodeFragment } from '../src/fragment.js';
 
-const baseUrl = process.env.HOSTED_NOWHERE_URL ?? 'http://127.0.0.1:4173';
+const baseUrl = process.env.ENVELOPE_URL ?? 'http://127.0.0.1:4173';
 const browser = await chromium.launch({
   headless: true,
   executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -11,9 +11,9 @@ const browser = await chromium.launch({
 try {
   const page = await browser.newPage();
   await page.addInitScript(() => {
-    globalThis.hostedNowherePaja = {
+    globalThis.envelopePaja = {
       resolvePointer: async () => {
-        if (sessionStorage.getItem('hosted-nowhere-disable-live') === '1') {
+        if (sessionStorage.getItem('envelope-disable-live') === '1') {
           throw new Error('live resolver intentionally disabled');
         }
         return {
@@ -51,12 +51,12 @@ try {
   assert.equal(await frame.locator('#target').textContent(), 'Resolved target');
   assert.equal(await frame.evaluate(() => document.body.dataset.state), '{"view":"timeline"}');
   assert.ok(await frame.locator('meta[http-equiv="Content-Security-Policy"]').count());
-  assert.equal(await page.evaluate(() => typeof globalThis.hostedNowhereOffline?.prefetch), 'function');
+  assert.equal(await page.evaluate(() => typeof globalThis.envelopeOffline?.prefetch), 'function');
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
 
   const replayHash = encodeFragment({ pointer, state: { view: 'offline-replay' } });
   await page.evaluate((hash) => {
-    sessionStorage.setItem('hosted-nowhere-disable-live', '1');
+    sessionStorage.setItem('envelope-disable-live', '1');
     window.location.hash = hash.slice(1);
   }, replayHash);
   await page.waitForFunction(() => document.querySelector('#status')?.textContent === 'Target is ready.');

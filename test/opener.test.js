@@ -123,7 +123,7 @@ test('the host forwards the untouched fragment and resolves only the opener-pars
 });
 
 test('the host transports malformed fragments without parsing them', async () => {
-  const fragment = '#not-a-hosted-nowhere-payload';
+  const fragment = '#not-an-envelope-payload';
   const harness = makeHarness(fragment);
 
   await harness.opener.start();

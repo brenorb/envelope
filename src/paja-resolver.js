@@ -1,5 +1,5 @@
 /**
- * Adapt Kehto/Paja's verified pointer resolver to Hosted Nowhere's narrow
+ * Adapt Kehto/Paja's verified pointer resolver to Envelope's narrow
  * opener contract.
  *
  * The upstream resolver is injected so this package does not copy a moving
