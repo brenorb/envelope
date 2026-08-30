@@ -5,14 +5,15 @@ Envelope is a real nsite containing a customized static
 An opaque URL fragment selects a signed NIP-5D napplet and carries its launch
 state or NAP-INTENT contract.
 
-The currently published proof uses the legacy deployment address:
+The current Envelope deployment is:
 
 ```text
-https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2onowhere.nsite.lol/#nw1.<opaque-data>
+https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2oenvelope.nsite.lol/#nw1.<opaque-data>
 ```
 
-Publish the Envelope artifacts and update `config/deployment.json` before
-running the live proof against the renamed release.
+The host is named `envelope`; nsite.lol prefixes the name with the publishing
+account's vanity key. The opener pointer remains the separately published
+opener artifact recorded in `config/deployment.json`.
 
 Run `npm run test:live` to print and verify a complete example link. The test
 opens the public nsite, verifies exact state delivery, disables Chromium's
