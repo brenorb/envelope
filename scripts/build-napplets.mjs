@@ -51,7 +51,7 @@ export async function buildNapplets(outputDir = resolve(projectRoot, '.artifacts
       dTag: 'envelope-opener',
       title: 'Envelope opener',
       description: 'Decodes Envelope fragments and dispatches verified NAP-INTENT launches.',
-      requires: ['intent'],
+      requires: ['inc', 'intent'],
       archetypes: [],
     },
     {

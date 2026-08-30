@@ -19,12 +19,25 @@ Run `npm run test:live` to print and verify a complete example link. The test
 opens the public nsite, verifies exact state delivery, disables Chromium's
 network, reloads the same URL, and verifies the exact state again.
 
-## Three-link QR demo
+## Twenty-link QR demo
 
-`npm run build:demo` generates [`demo/index.html`](demo/index.html), three
-scannable SVG QR codes, and [`demo/links.json`](demo/links.json). The codes
-open the published note napplet with state, or the live Buildings napplet on a
-selected floor; the complete launch data remains in the URL fragment.
+`npm run build:demo` generates [`demo/index.html`](demo/index.html), ten
+scannable SVG QR codes, and [`demo/links.json`](demo/links.json). The set uses
+two published napplets with explicit incoming archetype/intent contracts:
+
+- Buildings, with two floor states.
+- Envelope's message target, with eight restored message examples.
+
+The complete launch data remains in each URL fragment. The previous message
+codes were not lost as a napplet: they target the published `Envelope example
+target` recorded as `exampleTargetPointer` in
+[`config/deployment.json`](config/deployment.json). The old QR files were
+replaced when the demo was regenerated; the eight `message-*` codes restore them
+in the current demo.
+
+Envelope also adapts the Paja resource proxy for the
+`blossom:sha256:<hash>` URLs emitted by Mapplets and Mappy, resolving them
+through the published Blossom server before the target app receives the bytes.
 
 DJ David Clanker is published on Nostr, but its current manifest has no
 archetype contract and its app does not subscribe to NAP-INC. A stateful FLX
@@ -39,7 +52,7 @@ All six required stages are implemented and covered by automated or live proof:
 
 1. The URL carries a bounded `#nw1.<base64url>` fragment, or an encrypted
    `#nwe1.<salt>.<iv>.<ciphertext>` fragment.
-2. The Envelope deployment uses a named `envelope` nsite (kind `35128`).
+2. The intended Envelope deployment uses a named `envelope` nsite (kind `35128`).
 3. The nsite's files are the real Paja static runtime plus a narrow Envelope
    adapter.
 4. Paja boots a separately published, signed opener napplet by its `naddr`.
@@ -49,9 +62,8 @@ All six required stages are implemented and covered by automated or live proof:
    NAP-INTENT. Paja delivers the state as a runtime-attested `inc.event` after
    the target's `shell.ready` handshake.
 
-The previous deployment's coordinates and event IDs are recorded in
-[`config/deployment.json`](config/deployment.json). The canonical implementation
-status is [`outputs/envelope-status/implementation-status.xlsx`](outputs/envelope-status/implementation-status.xlsx).
+The checked-in public proof is the Envelope deployment; its coordinates and
+event IDs are recorded in [`config/deployment.json`](config/deployment.json).
 Its signed events are archived under [`evidence/deployment/`](evidence/deployment/)
 and remain valid as historical evidence.
 

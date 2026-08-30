@@ -1,18 +1,18 @@
 {
   "kind": 35129,
-  "id": "84ffd1ac3b5b62293c4d072fe6480eb24b56ff9aec8c28f92132d65234c3250b",
+  "id": "eabb9c3e84df7f7b21b907db8b1a03b52f8b9d1b03f2d6dfd1855d9a8d823a3c",
   "pubkey": "42d617d410c079de294a7dc3d66685699729543c595ef419d125252cfb88b0b0",
-  "created_at": 1785977353,
+  "created_at": 1787872778,
   "tags": [
-    ["d", "hosted-nowhere-opener"],
-    ["path", "/index.html", "540e15f417c274fefbffa724645e838f5d21e57c380c2925b9ff79bf2e263559"],
-    ["x", "a543ad8ccb2bfeae006f0b73dbe20e3b12692bc6a3c0caaaef22897dd71cf58e", "aggregate"],
+    ["d", "envelope-opener"],
+    ["path", "/index.html", "bf49207bcfd49eee4fddf9f77aa123607f7150a9ea449416231e51ddb3d75928"],
+    ["x", "799cd127fd5d771b66a749a01cffc0c3ed8f6ee80ebd7fe1e72da7cc20105eb4", "aggregate"],
     ["server", "https://blossom.primal.net"],
     ["server", "https://cdn.hzrd149.com"],
     ["requires", "intent"],
-    ["title", "Hosted Nowhere opener"],
-    ["description", "Decodes Hosted Nowhere fragments and dispatches verified NAP-INTENT launches."]
+    ["title", "Envelope opener"],
+    ["description", "Decodes Envelope fragments and dispatches verified NAP-INTENT launches."]
   ],
-  "content": "{}",
-  "sig": "4a24cf1401dcd9ed884908c92374c94341224934ba1aec15ffba395a4218b70bf14623626ae61d7b967f87de94af7e428eb6a885d03f5fc3e8d0308e8ed3abd4"
+  "content": "",
+  "sig": "e00ab57b11b24ba1795d161d55a6696846cd870be832b89d448e0a630b8110647732307b2767732e860a86f12f72e2c07664320bcd48dd118c405ba5c84b7cc9"
 }

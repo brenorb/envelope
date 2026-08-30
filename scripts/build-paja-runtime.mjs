@@ -88,6 +88,30 @@ function writeEnvelopePointerEvent(pointer, event) {
     .replace(verifiedReturn, `    writeEnvelopePointerEvent(pointer, event);\n${verifiedReturn}`);
 }
 
+function addEnvelopeBlossomResourceSupport(source) {
+  const marker = 'function parseResourceUrl(url) {';
+  if (!source.includes(marker)) {
+    throw new Error('The installed Paja browser host no longer exposes its resource URL parser');
+  }
+
+  const helper = 'function normalizeEnvelopeResourceUrl(url) {\n'
+    + '  if (typeof url !== "string") return url;\n'
+    + '  const match = url.match(/^blossom:sha256:([0-9a-f]{64})$/i);\n'
+    + '  return match ? `https://blossom.primal.net/${match[1].toLowerCase()}` : url;\n'
+    + '}\n';
+  const fetchMarker = 'async function fetchResourceItem(options, identity, url, init, signal) {\n'
+    + '  const parsedUrl = parseResourceUrl(url);';
+  if (!source.includes(fetchMarker)) {
+    throw new Error('The installed Paja browser host no longer exposes its resource fetch path');
+  }
+
+  return source
+    .replace(marker, `${helper}${marker}`)
+    .replace(fetchMarker, 'async function fetchResourceItem(options, identity, url, init, signal) {\n'
+      + '  url = normalizeEnvelopeResourceUrl(url);\n'
+      + '  const parsedUrl = parseResourceUrl(url);');
+}
+
 async function prepareOutputDirectory(outputDir) {
   const resolvedOutput = resolve(outputDir);
   if (resolvedOutput === '/' || resolvedOutput === projectRoot) {
@@ -113,7 +137,9 @@ export async function buildPajaRuntime({
   const config = createPajaRuntimeHostConfig({ pointer: openerPointer }, builtAt);
   const html = addEnvelopeHost(renderPajaHtml(config));
   const configJson = `${JSON.stringify(config, null, 2)}\n`;
-  const browserHost = addOfflinePointerEventCache(await readFile(browserHostPath, 'utf8'));
+  const browserHost = addEnvelopeBlossomResourceSupport(
+    addOfflinePointerEventCache(await readFile(browserHostPath, 'utf8')),
+  );
 
   await Promise.all([
     writeFile(resolve(resolvedOutput, 'index.html'), html, 'utf8'),

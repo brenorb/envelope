@@ -4,9 +4,10 @@ import { DEFAULT_OPENER_HTML, createOpenerNappletController } from '../src/opene
 
 const pointer = 'naddr1qqxnzd3h9kummnw3e4kzmr0d3sk6t';
 
-function makeHarness(decodedRequest) {
+function makeHarness(decodedRequest, invokeResult = { ok: true, handled: true }) {
   const messages = [];
   const invocations = [];
+  const emissions = [];
   const listeners = new Map();
   const elements = {
     '#status': { textContent: '', dataset: {} },
@@ -22,10 +23,13 @@ function makeHarness(decodedRequest) {
     document: { querySelector: (selector) => elements[selector] },
     addEventListener: (type, listener) => listeners.set(type, listener),
     napplet: {
+      inc: {
+        emit: (topic, payload) => emissions.push({ topic, payload }),
+      },
       intent: {
         invoke: async (request) => {
           invocations.push(request);
-          return { ok: true, handled: true };
+          return invokeResult;
         },
       },
     },
@@ -39,7 +43,7 @@ function makeHarness(decodedRequest) {
   controller.start();
 
   const dispatch = (data, source = parent) => listeners.get('message')?.({ data, source });
-  return { controller, dispatch, elements, invocations, messages, parent };
+  return { controller, dispatch, elements, invocations, emissions, messages, parent };
 }
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
@@ -113,6 +117,34 @@ test('uses explicit link intent and ignores stale target-ready messages', async 
   await flush();
 
   assert.deepEqual(harness.invocations, [intent]);
+});
+
+test('falls back to the target convention through NAP-INC when intent is declined', async () => {
+  const state = { relay: 'wss://relay.example', group: 'madeira' };
+  const harness = makeHarness({
+    version: 1,
+    pointer,
+    state,
+    intent: { archetype: 'nip29-group', action: 'open', convention: 'napplet:nip29-group/open' },
+  }, { ok: true, handled: false, error: 'no handler' });
+
+  harness.dispatch({ type: 'shell.init' });
+  harness.dispatch({ type: 'opener.fragment', version: 1, fragment: '#opaque' });
+  const open = harness.messages.find((message) => message.type === 'opener.open');
+  harness.dispatch({
+    type: 'opener.target.ready',
+    version: 1,
+    requestId: open.requestId,
+    pointer,
+    contracts: [{ archetype: 'nip29-group', convention: 'napplet:nip29-group/open' }],
+  });
+  await flush();
+
+  assert.deepEqual(harness.emissions, [{
+    topic: 'napplet:nip29-group/open',
+    payload: state,
+  }]);
+  assert.equal(harness.elements['#status'].dataset.state, 'ready');
 });
 
 test('refuses an explicit intent not advertised by the verified target manifest', async () => {

@@ -1,10 +1,10 @@
 {
-  "siteUrl": "https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2onowhere.nsite.lol/",
-  "siteNaddr": "naddr1qvzqqqyf8qpzqskkzl2ppsremc555lwr6eng26vh992rck277svazff99nac3v9sqqrkummhdpjhyeg2c30eh",
-  "siteEventId": "e0da26d0668fe9a78e509639b462940a88c170e2c5af9e8323894d7a1ec851e5",
-  "runtimeBuiltAt": "2026-08-06T00:24:18.768Z",
-  "openerPointer": "naddr1qvzqqqyf8ypzqskkzl2ppsremc555lwr6eng26vh992rck277svazff99nac3v9sqy28wumn8ghj7un9d3shjtnyv9kh2uewd9hszrthwden5te0dehhxtnvdakqz9nhwden5te0wfjkccte9ec8y6tdv9kzumn9wsqp26r0wd6x2epddehhw6r9wfjj6mmsv4hx2usvmtamh",
-  "openerEventId": "84ffd1ac3b5b62293c4d072fe6480eb24b56ff9aec8c28f92132d65234c3250b",
-  "exampleTargetPointer": "naddr1qvzqqqyf8ypzqskkzl2ppsremc555lwr6eng26vh992rck277svazff99nac3v9sqy28wumn8ghj7un9d3shjtnyv9kh2uewd9hszrthwden5te0dehhxtnvdakqz9nhwden5te0wfjkccte9ec8y6tdv9kzumn9wsqpv6r0wd6x2epddehhw6r9wfjj6etcv9khqmr957mrqz",
-  "exampleTargetEventId": "bae2f7fdefd03ba160297d5d33b01e4b57e9997bf58881bd159e748d504ec725"
+  "siteUrl": "https://1nywmkqmtwmbl188q8gggxw8vjp62phce9ujzga9cdgtikqd2oenvelope.nsite.lol/",
+  "siteNaddr": "naddr1qvzqqqyf8qpzqskkzl2ppsremc555lwr6eng26vh992rck277svazff99nac3v9sqqyx2mnkv4kx7ur92zstj8",
+  "siteEventId": "47846ca87c7157b08fbd910e056a5f59ae260c1b9a597f3805e3d81b1ee2d043",
+  "runtimeBuiltAt": "2026-08-27T23:20:02.000Z",
+  "openerPointer": "naddr1qq8k2mnkv4kx7ur994hhqetwv4eqygzz6ctagyxq080zjjnac0txdptfju54g0zetm6pn5f9y5k0hz9skqpsgqqq3yus4p9g03",
+  "openerEventId": "eabb9c3e84df7f7b21b907db8b1a03b52f8b9d1b03f2d6dfd1855d9a8d823a3c",
+  "exampleTargetPointer": "naddr1qqgx2mnkv4kx7ur994jhsctdwpkx2q3qgttp04qscpuau2220hpave59dxtjj4put900gxw3y5jje7ugkzcqxpqqqzynj2j0sar",
+  "exampleTargetEventId": "92226ba6ba2be933c318abb1c359b48b78b4c8678e3ed43e5533178dffcdfc79"
 }

@@ -2,7 +2,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import QRCode from 'qrcode';
-import { createDemoLaunches } from '../src/demo.js';
+import { BUILDINGS_POINTER, createDemoLaunches } from '../src/demo.js';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -27,6 +27,7 @@ function renderDemoPage(launches) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta property="og:locale" content="en_US">
     <title>Envelope QR demo</title>
     <style>
       :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #101211; color: #f4f0df; }
@@ -65,7 +66,7 @@ export async function buildDemo({
   const deployment = JSON.parse(await readFile(resolve(projectRoot, 'config/deployment.json'), 'utf8'));
   const launches = createDemoLaunches({
     siteUrl: siteUrl ?? process.env.ENVELOPE_SITE_URL ?? deployment.siteUrl,
-    pointer: pointer ?? process.env.ENVELOPE_TARGET_POINTER ?? deployment.exampleTargetPointer,
+    pointer: pointer ?? process.env.ENVELOPE_TARGET_POINTER ?? BUILDINGS_POINTER,
   });
   const resolvedOutput = resolve(outputDir);
   if (resolvedOutput === '/' || resolvedOutput === projectRoot) throw new Error('Refusing to replace an unsafe demo output directory');

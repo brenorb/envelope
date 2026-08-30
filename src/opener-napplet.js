@@ -126,10 +126,24 @@ export function createOpenerNappletController(runtime, codec) {
     try {
       const intentApi = runtime.napplet?.intent;
       if (typeof intentApi?.invoke !== 'function') throw new Error('the Paja runtime did not grant NAP-INTENT');
-      const result = await intentApi.invoke(createIntentRequest(pending.request, message.contracts));
-      if (!result || result.ok !== true || result.handled !== true) {
+      const intent = createIntentRequest(pending.request, message.contracts);
+      const result = await intentApi.invoke(intent);
+      if (result?.ok === true && result.handled === true) {
+        setStatus('Napplet opened.', 'ready');
+        return;
+      }
+
+      // Several published napplets advertise an archetype but implement the
+      // initial open as a NAP-INC subscription. Keep NAP-INTENT as the first
+      // choice, then use the exact same convention as an INC topic when the
+      // target explicitly declined the intent. The opener has no target
+      // knowledge here: the host still authenticates the pointer and supplies
+      // only the target's verified manifest contracts.
+      const inc = runtime.napplet?.inc;
+      if (typeof inc?.emit !== 'function') {
         throw new Error(result?.error ?? 'the target did not handle the launch intent');
       }
+      inc.emit(intent.convention, intent.payload);
       setStatus('Napplet opened.', 'ready');
     } catch (error) {
       reportError(error);

@@ -54,7 +54,7 @@ aggregate, and canonical kind-35129 tags. Publish the exact bytes to every
 declared Blossom server, then sign and publish the matching manifest. Do not
 change an artifact after computing its release blueprint.
 
-The previous release was mirrored to:
+The current Envelope opener and example-target releases are mirrored to:
 
 - `https://blossom.primal.net`
 - `https://cdn.hzrd149.com`
@@ -65,8 +65,7 @@ and event IDs live in `config/deployment.json`.
 
 Exact signed events retrieved from the relays are archived in
 `evidence/deployment/`. `test/deployment-evidence.test.js` verifies every
-historical signature and pointer coordinate. The renamed Envelope artifacts
-need a new publish before their bytes can be added to that evidence.
+published signature and pointer coordinate.
 
 ## nsite deployment
 

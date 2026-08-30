@@ -40,6 +40,8 @@ test('builds the real static Paja runtime with the opener pinned as its boot tar
   assert.match(pajaHost, /envelope:paja:pointer-events:v1/);
   assert.match(pajaHost, /navigator\.onLine/);
   assert.match(pajaHost, /resolveNapplet/);
+  assert.match(pajaHost, /normalizeEnvelopeResourceUrl/);
+  assert.match(pajaHost, /blossom\.primal\.net/);
   assert.match(envelopeHost, /window\.location\.hash/);
   assert.match(envelopeHost, /opener\.fragment/);
   assert.doesNotMatch(envelopeHost, /decodeFragment|decodeEncryptedFragment/);

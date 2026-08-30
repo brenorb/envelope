@@ -5,23 +5,30 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { decodeFragment } from '../src/fragment.js';
 import { buildDemo } from '../scripts/build-demo.mjs';
+import {
+  BUILDINGS_POINTER,
+  ENVELOPE_EXAMPLE_POINTER,
+} from '../src/demo.js';
 
-const pointer = 'naddr1qqxnzd3h9kummnw3e4kzmr0d3sk6t';
-
-test('builds three stateful QR launch links for live napplets', async () => {
+test('builds ten stateful QR launch links for live napplets', async () => {
   const outputDir = await mkdtemp(join(tmpdir(), 'envelope-demo-'));
   const { launches } = await buildDemo({
     outputDir,
     siteUrl: 'https://envelope.example/',
-    pointer,
   });
 
-  assert.equal(launches.length, 3);
-  assert.deepEqual(launches.map(({ nappletId }) => nappletId), [
-    'envelope-example',
+  assert.equal(launches.length, 10);
+  assert.deepEqual(launches.slice(0, 2).map(({ nappletId }) => nappletId), [
     'buildings',
     'buildings',
   ]);
+  assert.deepEqual(launches.slice(0, 2).map(({ targetPointer }) => targetPointer), [
+    BUILDINGS_POINTER,
+    BUILDINGS_POINTER,
+  ]);
+  assert.equal(launches.filter(({ nappletId }) => nappletId === 'envelope-example').length, 8);
+  assert.equal(launches[2].targetPointer, ENVELOPE_EXAMPLE_POINTER);
+  assert.equal(launches[2].state.message, 'Welcome to Envelope.');
   for (const launch of launches) {
     const decoded = decodeFragment(new URL(launch.url).hash);
     assert.equal(decoded.pointer, launch.targetPointer);

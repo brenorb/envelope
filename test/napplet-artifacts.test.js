@@ -17,7 +17,7 @@ test('builds canonical opener and target NIP-5D release blueprints', async () =>
   const targetHtml = await readFile(join(outputDir, 'example-target/index.html'), 'utf8');
 
   assert.equal(opener.dTag, 'envelope-opener');
-  assert.deepEqual(opener.requires, ['intent']);
+  assert.deepEqual(opener.requires, ['inc', 'intent']);
   assert.deepEqual(opener.archetypes, []);
   assert.equal(target.dTag, 'envelope-example');
   assert.deepEqual(target.requires, ['inc']);
