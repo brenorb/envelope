@@ -225,3 +225,24 @@ test('the host rejects malformed opener output before invoking the resolver', as
   assert.equal(calls, 0);
   assert.equal(harness.status.attributes.get('data-state'), 'error');
 });
+
+// Opener.tla StateOnlyToTarget: a sandboxed target that navigates (for
+// example, the user follows a link in it) fires 'load' again for a page the
+// host cannot see. The launch state must not be posted to that page.
+test('the launch state is posted once per mounted frame', async () => {
+  const fragment = encodeFragment({ pointer, state: { secret: 'only-for-the-target' } });
+  const harness = makeHarness(fragment);
+  await harness.opener.start();
+  const openerFrame = harness.container.children[0];
+  openerFrame.dispatch('load');
+  openerFrame.dispatch('load');
+  assert.equal(openerFrame.contentWindow.messages.length, 1);
+
+  harness.window.dispatchMessage({ type: 'opener.open', version: 1, pointer, state: { secret: 'only-for-the-target' } }, openerFrame.contentWindow);
+  await flush();
+  const targetFrame = harness.container.children[0];
+  targetFrame.dispatch('load');
+  targetFrame.dispatch('load');
+  assert.equal(targetFrame.contentWindow.messages.length, 1);
+});
+

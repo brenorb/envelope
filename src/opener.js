@@ -111,8 +111,14 @@ export function createOpener({ window, document, container, status, resolver, bo
     frame.setAttribute('sandbox', 'allow-scripts');
     frame.sandbox?.add('allow-scripts');
     frame.setAttribute('title', target.title ?? 'Envelope napplet');
+    let posted = false;
     frame.addEventListener('load', () => {
       if (currentGeneration !== generation) return;
+      // Only the first load is the verified srcdoc. A later load means the
+      // sandboxed frame navigated, for example to a link the user followed,
+      // and the host cannot see which page it now holds.
+      if (posted) return;
+      posted = true;
       const message = {
         type: role === 'bootstrap' ? 'opener.fragment' : 'opener.init',
         version: 1,
