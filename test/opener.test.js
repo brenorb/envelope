@@ -246,3 +246,23 @@ test('the launch state is posted once per mounted frame', async () => {
   assert.equal(targetFrame.contentWindow.messages.length, 1);
 });
 
+// Opener.tla OneMountPerLink: a second opener.open for the same link must not
+// resolve and mount the target again.
+test('one link resolves and mounts its target once', async () => {
+  const fragment = encodeFragment({ pointer });
+  const resolved = [];
+  const harness = makeHarness(fragment, {
+    resolve: async (value) => {
+      resolved.push(value);
+      return { verified: true, indexHtml: '<h1>Target</h1>' };
+    },
+  });
+  await harness.opener.start();
+  const openerFrame = harness.container.children[0];
+  openerFrame.dispatch('load');
+  const open = { type: 'opener.open', version: 1, pointer };
+  harness.window.dispatchMessage(open, openerFrame.contentWindow);
+  harness.window.dispatchMessage(open, openerFrame.contentWindow);
+  await flush();
+  assert.deepEqual(resolved, [pointer]);
+});

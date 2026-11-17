@@ -29,6 +29,7 @@ export function createOpener({ window, document, container, status, resolver, bo
   let activeFragment = '';
   let activeFrameCleanup;
   let shellInitialized = false;
+  let openAccepted = false;
 
   const onHashChange = () => { void load(); };
   const onMessage = (event) => {
@@ -54,6 +55,10 @@ export function createOpener({ window, document, container, status, resolver, bo
         showError('The opener returned an invalid launch request.', error);
         return;
       }
+      // One link opens one target. A repeated request would resolve again
+      // and replace a target that has already received its state.
+      if (openAccepted) return;
+      openAccepted = true;
       void resolveAndMount(request, generation);
       return;
     }
@@ -73,6 +78,7 @@ export function createOpener({ window, document, container, status, resolver, bo
 
   async function load(hash = window.location.hash) {
     const currentGeneration = ++generation;
+    openAccepted = false;
     clearTarget();
     if (typeof hash !== 'string') {
       showError('The URL fragment is not a string.', new Error('fragment must be a string'));
