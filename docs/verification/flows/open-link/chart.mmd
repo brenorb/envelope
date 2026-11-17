@@ -1,0 +1,37 @@
+---
+title: "Open an Envelope link"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: open
+    lg1: stopped
+    lg2: working
+  }
+  class lg0 teal
+  class lg1 orange
+  class lg2 blue
+  s0: Envelope loading
+  s1: Opener reading the link
+  s2: Not a valid Envelope link
+  s3: Asking for the link password
+  s4: Fetching and verifying the napplet
+  s5: Napplet could not open
+  s6: Napplet running with its state
+  s7: Left the napplet, state not sent
+  [*] --> s0
+  s0 --> s1: the opener napplet starts
+  s1 --> s2: the link does not decode
+  s1 --> s3: the link is encrypted
+  s1 --> s4: the link is public
+  s3 --> s4: you enter the password
+  s4 --> s5: the napplet is missing or fails verification
+  s4 --> s6: the verified napplet loads
+  s6 --> s7: you follow a link inside the napplet
+  class s0 blue
+  class s1 blue
+  class s2 orange
+  class s3 blue
+  class s4 blue
+  class s5 orange
+  class s6 teal
+  class s7 teal
